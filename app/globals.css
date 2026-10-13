@@ -1,26 +1,380 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --color-sky-top: #8EC9F0;
+  --color-sky-bottom: #DDF1FB;
+  --color-grass: #5FA244;
+  --color-grass-dark: #3F7A2E;
+  --color-dirt: #8B5A2B;
+  --color-dirt-dark: #5E3B1C;
+  --color-stone: #8A8D91;
+  --color-stone-dark: #4B4E52;
+  --color-stone-light: #C7C9CC;
+  --color-wood: #B98E55;
+  --color-wood-dark: #6B4A2B;
+  --color-gold: #E3B341;
+  --color-gold-dark: #B88B27;
+  --color-redstone: #B3392F;
+  --color-diamond: #4AA3B5;
+  --color-text-main: #2B2118;
+  --color-text-muted: #695B4E;
+  --color-text-light: #F4EFE6;
+  --color-parchment: #F5EEDB;
+  --color-parchment-border: #D8C7A5;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+/* Theme overrides */
+[data-theme="day"] {
+  --color-sky-top: #8EC9F0;
+  --color-sky-bottom: #DDF1FB;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+[data-theme="sunset"] {
+  --color-sky-top: #D87B40;
+  --color-sky-bottom: #F6D29A;
+}
+
+[data-theme="cloudy"] {
+  --color-sky-top: #8E9CA8;
+  --color-sky-bottom: #CBD7E1;
+}
+
+[data-theme="night"] {
+  --color-sky-top: #1B2939;
+  --color-sky-bottom: #354B62;
+}
+
+/* Number typography overrides - Default to ultra-readable monospaced digits (JetBrains Mono) */
+:root {
+  --font-number: var(--font-number-mono), var(--font-sans), monospace;
+}
+
+[data-number-font="tabular"] {
+  --font-number: var(--font-number-mono), monospace;
+}
+
+[data-number-font="clean"] {
+  --font-number: var(--font-sans), sans-serif;
+}
+
+[data-number-font="silkscreen"] {
+  --font-number: var(--font-number-silkscreen), monospace;
+}
+
+[data-number-font="pixel"] {
+  --font-number: var(--font-pixel), monospace;
+}
+
+@theme {
+  --font-pixel: var(--font-pixel), monospace;
+  --font-sans: var(--font-sans), sans-serif;
+  --font-number: var(--font-number), monospace;
+  --color-sky-top: var(--color-sky-top);
+  --color-sky-bottom: var(--color-sky-bottom);
+  --color-grass: #5FA244;
+  --color-grass-dark: #3F7A2E;
+  --color-dirt: #8B5A2B;
+  --color-dirt-dark: #5E3B1C;
+  --color-stone: #8A8D91;
+  --color-stone-dark: #4B4E52;
+  --color-stone-light: #C7C9CC;
+  --color-wood: #B98E55;
+  --color-wood-dark: #6B4A2B;
+  --color-gold: #E3B341;
+  --color-gold-dark: #B88B27;
+  --color-redstone: #B3392F;
+  --color-diamond: #4AA3B5;
+}
+
+/* Base resets & typography */
+* {
+  box-sizing: border-box;
+  -webkit-font-smoothing: antialiased;
+}
+
+html, body {
+  min-height: 100%;
+  color: var(--color-text-main);
+  background-color: var(--color-sky-bottom);
+}
+
+/* Crisp pixel rendering */
+.crisp-pixel {
+  image-rendering: pixelated;
+  image-rendering: -moz-crisp-edges;
+  image-rendering: crisp-edges;
+}
+
+/* Pixel Art Fonts */
+.font-pixel {
+  font-family: var(--font-pixel), var(--font-sans), monospace;
+  letter-spacing: 0.03em;
+  text-rendering: optimizeLegibility;
+}
+
+.font-number {
+  font-family: var(--font-number), monospace;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+}
+
+/* Tactile Stone Panel */
+.pixel-panel-stone {
+  background-color: #8A8D91;
+  border-top: 3px solid #C7C9CC;
+  border-left: 3px solid #C7C9CC;
+  border-right: 3px solid #4B4E52;
+  border-bottom: 3px solid #4B4E52;
+  box-shadow: 2px 2px 0px rgba(43, 33, 24, 0.35);
+  border-radius: 2px;
+}
+
+/* Tactile Oak Panel */
+.pixel-panel-wood {
+  background-color: #B98E55;
+  border-top: 3px solid #DEB982;
+  border-left: 3px solid #DEB982;
+  border-right: 3px solid #6B4A2B;
+  border-bottom: 3px solid #6B4A2B;
+  box-shadow: 2px 2px 0px rgba(43, 33, 24, 0.35);
+  border-radius: 2px;
+}
+
+/* Parchment / Clean Paper Panel for high readability */
+.pixel-panel-parchment {
+  background-color: #FAF6ED;
+  border-top: 2px solid #FFFFFF;
+  border-left: 2px solid #FFFFFF;
+  border-right: 2px solid #CFBEA0;
+  border-bottom: 2px solid #CFBEA0;
+  box-shadow: 2px 2px 0px rgba(43, 33, 24, 0.15);
+  border-radius: 2px;
+}
+
+/* Inset Slot / Inventory Box */
+.pixel-slot {
+  background-color: #383B3E;
+  border-top: 2px solid #232527;
+  border-left: 2px solid #232527;
+  border-right: 2px solid #5A5D61;
+  border-bottom: 2px solid #5A5D61;
+  border-radius: 2px;
+}
+
+/* Inset Slot Light */
+.pixel-slot-light {
+  background-color: #E6DCBF;
+  border-top: 2px solid #BFB192;
+  border-left: 2px solid #BFB192;
+  border-right: 2px solid #FAF4E5;
+  border-bottom: 2px solid #FAF4E5;
+  border-radius: 2px;
+}
+
+/* Custom Minecraft-style tactile buttons */
+.pixel-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-sans), sans-serif;
+  font-size: 0.875rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  padding: 0.4rem 0.9rem;
+  cursor: pointer;
+  user-select: none;
+  transition: transform 0.05s ease, filter 0.1s ease;
+  outline: none;
+  border-radius: 2px;
+}
+
+.pixel-btn:hover {
+  filter: brightness(1.08);
+}
+
+.pixel-btn:active {
+  transform: translateY(2px);
+}
+
+.pixel-btn:focus-visible {
+  outline: 2px solid #E3B341;
+  outline-offset: 2px;
+}
+
+/* Primary Button (Gold/Harvest) */
+.pixel-btn-primary {
+  background-color: #E3B341;
+  color: #2B2118;
+  border-top: 2px solid #FBE186;
+  border-left: 2px solid #FBE186;
+  border-right: 2px solid #99701A;
+  border-bottom: 3px solid #99701A;
+  box-shadow: 0px 2px 0px rgba(43, 33, 24, 0.3);
+}
+.pixel-btn-primary:active {
+  border-top: 3px solid #99701A;
+  border-left: 2px solid #99701A;
+  border-right: 2px solid #FBE186;
+  border-bottom: 1px solid #FBE186;
+  box-shadow: none;
+}
+
+/* Stone Button (Classic UI) */
+.pixel-btn-stone {
+  background-color: #7B7E82;
+  color: #F4EFE6;
+  border-top: 2px solid #A8ABB0;
+  border-left: 2px solid #A8ABB0;
+  border-right: 2px solid #45474B;
+  border-bottom: 3px solid #45474B;
+  box-shadow: 0px 2px 0px rgba(43, 33, 24, 0.3);
+}
+.pixel-btn-stone:active {
+  border-top: 3px solid #45474B;
+  border-left: 2px solid #45474B;
+  border-right: 2px solid #A8ABB0;
+  border-bottom: 1px solid #A8ABB0;
+  box-shadow: none;
+}
+
+/* Wood Button */
+.pixel-btn-wood {
+  background-color: #A87E46;
+  color: #F4EFE6;
+  border-top: 2px solid #CFA46B;
+  border-left: 2px solid #CFA46B;
+  border-right: 2px solid #5C3D18;
+  border-bottom: 3px solid #5C3D18;
+  box-shadow: 0px 2px 0px rgba(43, 33, 24, 0.3);
+}
+.pixel-btn-wood:active {
+  border-top: 3px solid #5C3D18;
+  border-left: 2px solid #5C3D18;
+  border-right: 2px solid #CFA46B;
+  border-bottom: 1px solid #CFA46B;
+  box-shadow: none;
+}
+
+/* Redstone / Danger Button */
+.pixel-btn-danger {
+  background-color: #B3392F;
+  color: #F4EFE6;
+  border-top: 2px solid #D95D52;
+  border-left: 2px solid #D95D52;
+  border-right: 2px solid #6E1F18;
+  border-bottom: 3px solid #6E1F18;
+  box-shadow: 0px 2px 0px rgba(43, 33, 24, 0.3);
+}
+.pixel-btn-danger:active {
+  border-top: 3px solid #6E1F18;
+  border-left: 2px solid #6E1F18;
+  border-right: 2px solid #D95D52;
+  border-bottom: 1px solid #D95D52;
+  box-shadow: none;
+}
+
+/* Ghost / Parchment Secondary Button */
+.pixel-btn-ghost {
+  background-color: #EFE6D2;
+  color: #2B2118;
+  border-top: 2px solid #FFFFFF;
+  border-left: 2px solid #FFFFFF;
+  border-right: 2px solid #C3B497;
+  border-bottom: 3px solid #C3B497;
+  box-shadow: 0px 2px 0px rgba(43, 33, 24, 0.15);
+}
+.pixel-btn-ghost:active {
+  border-top: 3px solid #C3B497;
+  border-left: 2px solid #C3B497;
+  border-right: 2px solid #FFFFFF;
+  border-bottom: 1px solid #FFFFFF;
+  box-shadow: none;
+}
+
+/* Input Styles */
+.pixel-input {
+  background-color: #FFFFFF;
+  color: #2B2118;
+  border-top: 2px solid #736E67;
+  border-left: 2px solid #736E67;
+  border-right: 2px solid #DFD9CE;
+  border-bottom: 2px solid #DFD9CE;
+  padding: 0.5rem 0.75rem;
+  border-radius: 2px;
+  outline: none;
+  font-family: var(--font-sans), sans-serif;
+}
+.pixel-input:focus {
+  border-top: 2px solid #E3B341;
+  border-left: 2px solid #E3B341;
+  border-right: 2px solid #B88B27;
+  border-bottom: 2px solid #B88B27;
+  box-shadow: 0 0 0 1px #E3B341;
+}
+
+/* Custom scrollbars */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: #EADDC9;
+  border-left: 1px solid #D3C3A8;
+}
+::-webkit-scrollbar-thumb {
+  background: #8A8D91;
+  border: 2px solid #C7C9CC;
+  border-right-color: #4B4E52;
+  border-bottom-color: #4B4E52;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #76797D;
+}
+
+/* Drifting clouds animation */
+@keyframes cloudDriftSlow {
+  0% { transform: translateX(-10%); }
+  100% { transform: translateX(110%); }
+}
+
+@keyframes cloudDriftFast {
+  0% { transform: translateX(-20%); }
+  100% { transform: translateX(120%); }
+}
+
+@keyframes islandFloat {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-7px); }
+}
+
+@keyframes flameFlicker {
+  0%, 100% { transform: scale(1) translateY(0); }
+  50% { transform: scale(1.08) translateY(-1px); }
+}
+
+@keyframes pickaxeSwing {
+  0% { transform: rotate(0deg); }
+  35% { transform: rotate(-35deg); }
+  70% { transform: rotate(18deg); }
+  100% { transform: rotate(0deg); }
+}
+
+.animate-island-float {
+  animation: islandFloat 4s ease-in-out infinite;
+}
+
+.animate-flame {
+  animation: flameFlicker 0.6s ease-in-out infinite;
+}
+
+.animate-pickaxe {
+  animation: pickaxeSwing 0.7s cubic-bezier(0.2, 0.8, 0.3, 1) infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-island-float,
+  .animate-flame,
+  .animate-pickaxe {
+    animation: none !important;
   }
-}
-
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
 }
