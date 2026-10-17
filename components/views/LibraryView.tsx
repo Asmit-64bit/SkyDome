@@ -2,15 +2,11 @@
 
 import React, { useState } from 'react';
 import { useSkyDoStore } from '../../store/useSkyDoStore';
-import { LibraryNote } from '../../lib/types';
-import { PixelPanel } from '../ui/PixelPanel';
 import { PixelButton } from '../ui/PixelButton';
 import {
   IconLibrary,
   IconPlus,
   IconTrash,
-  IconSearch,
-  IconSparkle,
 } from '../icons/PixelIcons';
 
 const renderInlineMarkdown = (text: string, keyPrefix: string) => {
