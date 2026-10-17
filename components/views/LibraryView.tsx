@@ -13,6 +13,75 @@ import {
   IconSparkle,
 } from '../icons/PixelIcons';
 
+const renderInlineMarkdown = (text: string, keyPrefix: string) => {
+  const tokens = text.split(/(\*\*[^*]+\*\*|\*[^*]+\*|`[^`]+`)/g);
+
+  return tokens.map((token, index) => {
+    const key = `${keyPrefix}-${index}`;
+    if (token.startsWith('**') && token.endsWith('**')) {
+      return <strong key={key} className="font-bold">{token.slice(2, -2)}</strong>;
+    }
+    if (token.startsWith('*') && token.endsWith('*')) {
+      return <em key={key}>{token.slice(1, -1)}</em>;
+    }
+    if (token.startsWith('`') && token.endsWith('`')) {
+      return <code key={key} className="rounded bg-[#EAE0CA] px-1 py-0.5 font-mono text-[0.9em]">{token.slice(1, -1)}</code>;
+    }
+    return <React.Fragment key={key}>{token}</React.Fragment>;
+  });
+};
+
+const renderMarkdown = (content: string) => {
+  const lines = content.split('\n');
+  const blocks: React.ReactNode[] = [];
+
+  for (let index = 0; index < lines.length; index += 1) {
+    const line = lines[index].trimEnd();
+    if (!line.trim()) continue;
+
+    const heading = line.match(/^(#{1,3})\s+(.+)$/);
+    if (heading) {
+      const HeadingTag = heading[1].length === 1 ? 'h1' : heading[1].length === 2 ? 'h2' : 'h3';
+      const sizeClass = heading[1].length === 1 ? 'text-xl' : heading[1].length === 2 ? 'text-lg' : 'text-base';
+      blocks.push(
+        <HeadingTag key={`heading-${index}`} className={`font-pixel ${sizeClass} font-bold text-[#2B2118] mt-3 mb-2`}>
+          {renderInlineMarkdown(heading[2], `heading-${index}`)}
+        </HeadingTag>
+      );
+      continue;
+    }
+
+    if (/^\s*[-*]\s+/.test(line)) {
+      const items: React.ReactNode[] = [];
+      while (index < lines.length && /^\s*[-*]\s+/.test(lines[index])) {
+        const itemLine = lines[index].replace(/^\s*[-*]\s+/, '');
+        items.push(<li key={`list-item-${index}`}>{renderInlineMarkdown(itemLine, `list-item-${index}`)}</li>);
+        index += 1;
+      }
+      index -= 1;
+      blocks.push(<ul key={`list-${index}`} className="my-2 ml-5 list-disc space-y-1 text-[#2B2118]">{items}</ul>);
+      continue;
+    }
+
+    if (line.startsWith('> ')) {
+      blocks.push(
+        <blockquote key={`quote-${index}`} className="my-3 border-l-4 border-[#B98E55] pl-3 italic text-[#6B5A49]">
+          {renderInlineMarkdown(line.slice(2), `quote-${index}`)}
+        </blockquote>
+      );
+      continue;
+    }
+
+    blocks.push(
+      <p key={`paragraph-${index}`} className="my-2 whitespace-pre-wrap text-[#2B2118]">
+        {renderInlineMarkdown(line, `paragraph-${index}`)}
+      </p>
+    );
+  }
+
+  return blocks;
+};
+
 export const LibraryView: React.FC = () => {
   const notes = useSkyDoStore((state) => state.notes);
   const addNote = useSkyDoStore((state) => state.addNote);
@@ -23,7 +92,7 @@ export const LibraryView: React.FC = () => {
   const [activeNoteId, setActiveNoteId] = useState<string>(notes[0]?.id || '');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedFolder, setSelectedFolder] = useState<string>('All');
-  const [isPreview, setIsPreview] = useState(false);
+  const [isPreview, setIsPreview] = useState(true);
 
   // Active note object
   const activeNote = notes.find((n) => n.id === activeNoteId) || notes[0];
@@ -120,7 +189,10 @@ export const LibraryView: React.FC = () => {
                 return (
                   <div
                     key={note.id}
-                    onClick={() => setActiveNoteId(note.id)}
+                    onClick={() => {
+                      setActiveNoteId(note.id);
+                      setIsPreview(true);
+                    }}
                     className={`p-2.5 rounded-xs cursor-pointer transition-all border-l-4 ${
                       isSelected
                         ? 'bg-[#FAF6ED] text-[#2B2118] border-l-[#E3B341] shadow-md'
@@ -220,42 +292,8 @@ export const LibraryView: React.FC = () => {
               {/* Editor / Markdown Render Area */}
               <div className="flex-1 flex flex-col">
                 {isPreview ? (
-                  <div className="flex-1 p-4 bg-white/60 border border-[#D5C7AF] rounded-xs overflow-y-auto prose prose-stone max-w-none text-sm font-sans leading-relaxed">
-                    {activeNote.content.split('\n').map((line, idx) => {
-                      if (line.startsWith('# ')) {
-                        return (
-                          <h1 key={idx} className="font-pixel text-xl font-bold text-[#2B2118] mt-3 mb-2">
-                            {line.replace('# ', '')}
-                          </h1>
-                        );
-                      }
-                      if (line.startsWith('### ')) {
-                        return (
-                          <h3 key={idx} className="font-pixel text-base font-bold text-[#2B2118] mt-2 mb-1">
-                            {line.replace('### ', '')}
-                          </h3>
-                        );
-                      }
-                      if (line.startsWith('- ')) {
-                        return (
-                          <li key={idx} className="ml-4 list-disc text-sm text-[#2B2118]">
-                            {line.replace('- ', '')}
-                          </li>
-                        );
-                      }
-                      if (line.startsWith('> ')) {
-                        return (
-                          <blockquote key={idx} className="border-l-4 border-[#B98E55] pl-3 italic text-[#6B5A49] my-2">
-                            {line.replace('> ', '')}
-                          </blockquote>
-                        );
-                      }
-                      return (
-                        <p key={idx} className="text-sm text-[#2B2118] my-1">
-                          {line}
-                        </p>
-                      );
-                    })}
+                  <div className="flex-1 p-4 bg-white/60 border border-[#D5C7AF] rounded-xs overflow-y-auto text-sm font-sans leading-relaxed">
+                    {renderMarkdown(activeNote.content)}
                   </div>
                 ) : (
                   <textarea
