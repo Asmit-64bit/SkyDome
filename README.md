@@ -1,176 +1,67 @@
-# SkyDome 🏝️ — Skyblock Productivity Island
+# SkyDome 🏝️
 
-A polished, production-quality productivity web application fusing the tactile charm and progression loops of **Minecraft Skyblock** with a clean, calm, and distraction-free productivity system.
+SkyDome is a Skyblock-inspired productivity app. Turn tasks and daily habits into island progress, minion rewards, skill XP, and cosmetic unlocks.
 
----
+![SkyDome pixel-art floating island logo](public/skydome-logo.png)
 
-## ⚡ Quickstart
+## Getting started
 
-Run the following commands to install dependencies and launch the application:
+Requires Node.js 20.9 or later.
 
 ```bash
 npm install
 npm run dev
 ```
 
-Then open [http://localhost:3000](http://localhost:3000) in your browser.
+Open [http://localhost:3000](http://localhost:3000).
 
-To build for production:
+To create and run a production build locally:
 
 ```bash
 npm run build
 npm start
 ```
 
----
+The app does not require environment variables or a backend. Progress is stored in the browser and can be backed up through the import/export controls in Settings.
 
-## 🎨 Visual Direction & Design System
+## What you can do
 
-SkyDome adheres strictly to an authentic, retro-crafted indie game menu aesthetic balanced with high readability:
+- **Grow your island:** Earn XP from productivity, level up, and expand a rotatable voxel island with trees, houses, crops, water, decorations, and pets.
+- **Plan work:** Create quests with priorities, due dates, tags, and checklists. Quick Add understands natural-language dates and priority tags.
+- **Build habits:** Track recurring minion plots, harvest rewards, upgrade minions, and review habit history.
+- **Focus:** Run Pomodoro sessions in the Mining Shaft, collect ores, and link a session to a quest. A running session remains visible while navigating the app.
+- **Shop and unlock:** Use coins and ores in the Bazaar for island items, farm plots, and themed cosmetics. Item categories and level requirements help track unlocks.
+- **Read and write guides:** The Island Library supports Markdown headings, emphasis, lists, quotes, and inline code, with separate reading and editing views.
+- **Review progress:** Use the Almanac, skill pages, streaks, and XP summaries to see what you have completed.
+- **Make it yours:** Choose Day, Sunset, Cloudy, Night, or the level-80 Galaxy theme. Adjust sound, music volume, reduced motion, and timer lengths in Settings.
+- **Navigate on any screen:** Desktop uses a side navigation bar; small screens use a fixed header and bottom tab bar.
 
-- **Earthy Muted Palette (CSS Tokens):**
-  - **Sky:** `#8EC9F0` (zenith) fading to `#DDF1FB` (horizon)
-  - **Grass:** `#5FA244`, dark grass `#3F7A2E`
-  - **Dirt:** `#8B5A2B`, dark dirt `#5E3B1C`
-  - **Stone:** `#8A8D91`, dark stone `#4B4E52`, light stone `#C7C9CC`
-  - **Wood / Oak:** `#B98E55`, dark oak `#6B4A2B`
-  - **Gold Accent (Primary Highlight):** `#E3B341`
-  - **Redstone (Danger only, muted):** `#B3392F`
-  - **Diamond (Teal-blue):** `#4AA3B5`
-  - **Text on Light:** `#2B2118`, **Text on Dark:** `#F4EFE6`
-  - **Strictly NO purple, violet, magenta, neon, or blurry glow box-shadows.**
-- **Tactile Carved Bevels:** Panels and buttons feature authentic 2-3px solid bevel borders with a lighter top/left highlight, darker bottom/right shadow edge, and flat offset drop shadows.
-- **Micro-Interactions:** Buttons depress by 2px on press (`:active`), shifting the bevel inward like real Minecraft UI buttons.
-- **Typography:**
-  - `Pixelify Sans` for headings, labels, and badges only (`font-pixel`).
-  - `Inter` for body copy, notes, and task text to ensure maximum readability and zero eye strain.
-- **Procedural 8-Bit Web Audio:** Custom synthesizer using the Web Audio API (zero external audio file dependencies). Plays soft wooden clicks, level-up fanfares, chest creaks, and block break chimes. Off by default per requirement.
-- **Accessibility:** Full keyboard navigation (`Tab`, `Space`, `Enter`, `Esc`), visible gold focus rings (`focus-visible`), WCAG AA contrast, and `prefers-reduced-motion` compliance.
+## Stack
 
----
+- Next.js 16 with the App Router
+- React 19 and TypeScript
+- Tailwind CSS 4, compiled through the `@tailwindcss/postcss` plugin in `postcss.config.mjs`
+- Three.js for the voxel island and mining visuals
+- Zustand for app state and browser persistence
+- Recharts for analytics
 
-## 🛠️ Core Feature Architecture
+## Project layout
 
-SkyDome maps everyday productivity habits to Skyblock game loops:
-
-### 1. 🏝️ Island Hub (Dashboard) & 3D Voxel World
-- **Interactive 3D Voxel Island (Three.js):** A full 3D voxel floating island with 360° mouse & touch orbit rotation, realistic PCF shadow mapping, and dynamic atmosphere lighting responsive to current sky themes (Day, Sunset, Cloudy, Night).
-- **Toggleable 3D / 2D Modes:** Switch between real-time 3D voxel graphics and classic crisp 2D pixel art anytime.
-- **Visual Island Growth in 3D:** Earn a free starter island and unlock Bazaar offers as your island level advances:
-  - *Level 1:* 3D Campfire with animated point lighting and flickering flame particles.
-  - *Bazaar purchase:* Volumetric 3D Oak Tree with wooden trunk and leafy canopy (available at island level 2).
-  - *Level 3:* 3D Wooden Storage Chest with gold latch.
-  - *Bazaar purchase:* Cozy 3D Timber Cabin (available at level 3), Cascading Waterfall (level 5), and companion Slime (level 7).
-- **Daily Streak Campfire:** Animated campfire flame tracking consecutive productive days.
-- **Quick-Add Bar:** Natural language input right on the dashboard.
-
-### 2. 📜 Quest Log (Tasks)
-- **Rarity / Priority Tiers:** *Common*, *Uncommon*, *Rare*, *Epic*, *Legendary* indicated by clean, muted border accents.
-- **Subtask Checklists:** Direct inline check-off and creation of subtasks.
-- **Views:** *Today*, *Upcoming*, *All*, *Completed*.
-- **Drag & Reorder:** Up/down ordering controls.
-- **Natural Language Parsing:** Type `"Deploy release tomorrow 5pm !epic #work"` and SkyDome automatically schedules the date, time, priority, and hashtags.
-- **Celebration:** Slaying a quest triggers a pixel particle burst, XP popup, and sound.
-- **Undo Toast:** Toast notification with an active countdown timer allows instant undo.
-
-### 3. ⚙️ Minion Plots (Recurring Habits)
-- **Automated Block Minions:** Cute animated characters on designated garden plots.
-- **Habit Check-Off:** Checking off your daily habit makes your minion celebrate and drop resource items (*Wheat*, *Iron Ingot*, *Oak Timber*, *Polished Stone*).
-- **4-Week Mini Heatmap:** 28-day contribution square grid per habit. Click any past day to toggle records.
-- **Minion Tier Upgrades:** Spend coins to upgrade minions up to Tier 11, compounding resource yields.
-
-### 4. ⚒️ Focus Mining Shaft (3D Pomodoro Timer)
-- **Interactive 3D Voxel Ore Block (Three.js):** Choose between *Cobblestone*, *Iron Ore*, *Gold Ore*, and *Diamond Ore* rotating in full 3D.
-- **Dynamic 3D Fracture Decals:** As focus time elapses, the 3D block progressively fractures with 5 stages of crack planes across all faces.
-- **Animated 3D Pickaxe:** 3D pixel pickaxe dynamically strikes the mineral block on timer ticks.
-- **Toggleable 3D / 2D:** Switch between the 3D interactive voxel block and 2D pixel art.
-- **Quest Linkage & Stockpile:** Link focus sessions directly to active quests and accumulate mined ores in your vault.
-
-### 5. 🌟 Skills & Analytics
-- **5 Core Skill Disciplines:**
-  - *Farming:* Levelled via daily Minion habits.
-  - *Mining:* Levelled via Focus Pomodoro sessions.
-  - *Combat:* Levelled by slaying high-priority, Epic, and Legendary quests.
-  - *Foraging:* Levelled by documenting Library notes.
-  - *Fishing:* Levelled by on-time scheduled Almanac quests.
-- **Milestones:** Unlock passive perks and island decor at milestone levels.
-- **Weekly Analytics:** Clean charts built with `Recharts` using the earthy muted palette (Weekly XP Production and Deep Focus Minutes).
-
-### 6. 📚 The Island Library (Notes)
-- **Bookshelf Shelf View:** Folders and tomes organized like leather books on a wooden bookshelf.
-- **Clean Markdown Editor:** Full support for headers, lists, quotes, and a live toggleable Preview mode.
-- **Search & Pinning:** Instantly filter notes by content or pin crucial guides to the top.
-
-### 7. 🎁 Treasure Vault & Bazaar (Chest & Shop)
-- **Daily Bounty Crate:** Open the wooden treasure chest with an authentic lid-creaking animation to harvest random coin and XP drops.
-- **Bazaar Catalog:** Spend earned productivity coins on island cosmetics including the *Farm Patch*, *Cherry Blossom Tree*, *Sky Crystal Cluster*, and *Sky Lantern Walk*, alongside the *Campfire*, *Oak Tree*, *Cozy Cabin*, *Waterfall*, and pets such as the *Cube Slime*, *Cloud Chick*, *Mossback Turtle*, *Ember Fox*, *Frost Wolf*, and *Moonshadow Cat*.
-
-### 8. 📅 Almanac (Calendar)
-- **Month & Week Views:** Quests with scheduled due dates appear as compact colored blocks.
-- **Day Inspector:** Click any date to view scheduled objectives or plant a new due task directly.
-
-### 9. ⚙️ Settings & Persistence
-- **Themes:** Toggle between *Daytime Azure*, *Amber Sunset*, *Overcast Slate*, and *Midnight Sky*.
-- **Sound Synth:** Turn procedural 8-bit sound effects on/off and adjust the master volume slider.
-- **Reduced Motion:** Pause floating island bobs and cloud drifting.
-- **Timer Customization:** Customize Focus, Short Break, and Long Break durations.
-- **Zero Backend / JSON Portability:** All data is kept securely in `localStorage`. One-click *Export Island JSON* and *Import JSON* backup tools ensure complete data ownership.
-- **Command Palette:** Press `Ctrl+K` or `Cmd+K` anywhere to search and jump to any page or command.
-
----
-
-## 🏗️ Folder Structure
-
-```
-├── app/
-│   ├── globals.css          # Skyblock CSS tokens, bevels, buttons, animations
-│   ├── layout.tsx           # Pixelify Sans & Inter Google Font loading
-│   └── page.tsx             # Server page wrapping SkyDomeApp in Suspense
-├── components/
-│   ├── icons/
-│   │   └── PixelIcons.tsx   # Original pixel-art SVG sprites
-│   ├── island/
-│   │   └── FloatingIslandHero.tsx # Layered sky & growing floating island
-│   ├── layout/
-│   │   ├── BottomTabBar.tsx # Mobile 5-tab bar + More drawer + FAB
-│   │   ├── CommandPalette.tsx # Ctrl+K quick action engine
-│   │   ├── OnboardingModal.tsx # 3-step intro setup
-│   │   └── Sidebar.tsx      # Desktop stone navigation
-│   ├── minions/
-│   │   ├── MinionCard.tsx   # Animated minion plot + 4-week heatmap
-│   │   └── MinionModal.tsx  # Minion configuration dialog
-│   ├── quests/
-│   │   ├── QuestItem.tsx    # Tactile checkbox, subtasks, priority borders
-│   │   ├── QuestModal.tsx   # Full quest editor
-│   │   └── QuickAddInput.tsx # Natural language date & tag parser
-│   ├── ui/
-│   │   ├── PixelBadge.tsx   # Rarity badges (Common - Legendary)
-│   │   ├── PixelButton.tsx  # Minecraft tactile button with active depression
-│   │   ├── PixelModal.tsx   # Dialog container with stone titlebar
-│   │   ├── PixelPanel.tsx   # Carved stone, wood, and parchment panels
-│   │   ├── PixelProgress.tsx# XP bar with bevel styling
-│   │   ├── PixelTabs.tsx    # Wooden signpost tabs
-│   │   └── ToastContainer.tsx # Undo toast with countdown timer
-│   ├── views/
-│   │   ├── CalendarView.tsx
-│   │   ├── ChestView.tsx
-│   │   ├── IslandDashboard.tsx
-│   │   ├── LibraryView.tsx
-│   │   ├── MiningView.tsx
-│   │   ├── MinionsView.tsx
-│   │   ├── QuestsView.tsx
-│   │   ├── SettingsView.tsx
-│   │   └── SkillsView.tsx
-│   └── SkyDomeApp.tsx         # Client root coordinator
-├── lib/
-│   ├── dateParser.ts        # Natural language date/time parser
-│   ├── sound.ts             # Web Audio API 8-bit procedural sound synth
-│   └── types.ts             # TypeScript models & types
-└── store/
-    └── useSkyDomeStore.ts     # Zustand store with persistence & seed data
+```text
+app/                  App Router entry points, global styles, and layout
+components/            App shell, navigation, shared UI, and feature views
+components/island/     Island scene and voxel rendering
+components/views/      Dashboard, quests, minions, mining, library, and settings
+lib/                   Date parsing, sound, textures, and shared types
+store/useSkyDoStore.ts Persistent application state and progression logic
+public/                 Logo, bundled background music, and other static assets
+postcss.config.mjs      Tailwind CSS 4 PostCSS setup for production and development
 ```
 
----
+## Deploying to Vercel
 
-## 📜 License & Originality Notice
-SkyDome is an original productivity web application. All sprites, icons, and themes are custom SVG creations designed to capture the cozy feel of voxel skyblock adventures without utilizing any proprietary Minecraft or Hypixel assets, trademarks, or textures.
+Import the repository into Vercel and use the detected Next.js settings. The build command is `npm run build`; no environment variables are required. Keep `postcss.config.mjs`, `package.json`, and `package-lock.json` in the deployment so Tailwind styles are generated in production.
+
+## Assets
+
+SkyDome is an original productivity app with custom voxel-inspired graphics. It does not include proprietary Minecraft or Hypixel game assets.

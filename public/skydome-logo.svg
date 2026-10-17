@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 180" role="img" aria-labelledby="title description">
+  <title id="title">SkyDome</title>
+  <desc id="description">A pixel-art floating island with a sapling beside the SkyDome wordmark.</desc>
+
+  <!-- Sky tile -->
+  <path d="M24 16h112v8h8v112h-8v8H24v-8h-8V24h8z" fill="#8EC9F0" stroke="#2B2118" stroke-width="4" shape-rendering="crispEdges" />
+  <path d="M24 24h112v104H24z" fill="#A9D9F5" />
+
+  <!-- Tiny star -->
+  <path d="M116 36h6v8h6v6h-6v8h-6v-8h-6v-6h6z" fill="#E3B341" stroke="#99701A" stroke-width="2" shape-rendering="crispEdges" />
+
+  <!-- Sapling -->
+  <path d="M68 51h24v8H68zM60 59h40v12H60z" fill="#3F7A2E" stroke="#2B5B24" stroke-width="2" shape-rendering="crispEdges" />
+  <path d="M76 69h8v15h-8z" fill="#6B4A2B" shape-rendering="crispEdges" />
+
+  <!-- Floating grass island -->
+  <path d="M36 80h80v10h12v12h-8v10H48v-8h-8v-8h-8v-8h4z" fill="#5FA244" stroke="#2B2118" stroke-width="3" shape-rendering="crispEdges" />
+  <path d="M42 82h28v8H42zM82 82h24v8H82z" fill="#75BA57" shape-rendering="crispEdges" />
+  <path d="M40 96h88v12H40zM48 108h72v10H48zM58 118h52v10H58z" fill="#8B5A2B" stroke="#5E3B1C" stroke-width="2" shape-rendering="crispEdges" />
+  <path d="M54 101h8v6h-8zM102 112h8v6h-8zM70 120h8v6h-8z" fill="#6B4A2B" shape-rendering="crispEdges" />
+  <path d="M72 128h24v8H72zM78 136h12v6H78z" fill="#8A8D91" stroke="#4B4E52" stroke-width="2" shape-rendering="crispEdges" />
+
+  <!-- Pixel wordmark: SKYDOME -->
+  <g fill="#2B2118" shape-rendering="crispEdges">
+    <!-- S -->
+    <path d="M188 54h7v7h-7zM195 54h7v7h-7zM202 54h7v7h-7zM209 54h7v7h-7zM216 54h7v7h-7zM188 61h7v7h-7zM188 68h7v7h-7zM195 75h7v7h-7zM202 75h7v7h-7zM209 75h7v7h-7zM216 75h7v7h-7zM216 82h7v7h-7zM216 89h7v7h-7zM209 96h7v7h-7zM202 96h7v7h-7zM195 96h7v7h-7zM188 96h7v7h-7z" />
+    <!-- K -->
+    <path d="M237 54h7v7h-7zM237 61h7v7h-7zM237 68h7v7h-7zM237 75h7v7h-7zM237 82h7v7h-7zM237 89h7v7h-7zM237 96h7v7h-7zM265 54h7v7h-7zM258 61h7v7h-7zM251 68h7v7h-7zM244 75h7v7h-7zM251 82h7v7h-7zM258 89h7v7h-7zM265 96h7v7h-7z" />
+    <!-- Y -->
+    <path d="M286 54h7v7h-7zM321 54h7v7h-7zM293 61h7v7h-7zM314 61h7v7h-7zM300 68h7v7h-7zM307 68h7v7h-7zM300 75h7v7h-7zM300 82h7v7h-7zM300 89h7v7h-7zM300 96h7v7h-7z" />
+    <!-- D -->
+    <path d="M335 54h7v7h-7zM342 54h7v7h-7zM349 54h7v7h-7zM356 54h7v7h-7zM363 61h7v7h-7zM370 68h7v7h-7zM370 75h7v7h-7zM370 82h7v7h-7zM363 89h7v7h-7zM356 96h7v7h-7zM349 96h7v7h-7zM342 96h7v7h-7zM335 96h7v7h-7zM335 61h7v7h-7zM335 68h7v7h-7zM335 75h7v7h-7zM335 82h7v7h-7zM335 89h7v7h-7z" />
+    <!-- O -->
+    <path d="M391 54h7v7h-7zM398 54h7v7h-7zM405 54h7v7h-7zM412 54h7v7h-7zM384 61h7v7h-7zM419 61h7v7h-7zM384 68h7v7h-7zM419 68h7v7h-7zM384 75h7v7h-7zM419 75h7v7h-7zM384 82h7v7h-7zM419 82h7v7h-7zM384 89h7v7h-7zM419 89h7v7h-7zM391 96h7v7h-7zM398 96h7v7h-7zM405 96h7v7h-7zM412 96h7v7h-7z" />
+    <!-- M -->
+    <path d="M433 54h7v7h-7zM440 54h7v7h-7zM461 54h7v7h-7zM468 54h7v7h-7zM433 61h7v7h-7zM447 61h7v7h-7zM454 61h7v7h-7zM468 61h7v7h-7zM433 68h7v7h-7zM454 68h7v7h-7zM468 68h7v7h-7zM433 75h7v7h-7zM468 75h7v7h-7zM433 82h7v7h-7zM468 82h7v7h-7zM433 89h7v7h-7zM468 89h7v7h-7zM433 96h7v7h-7zM468 96h7v7h-7z" />
+    <!-- E -->
+    <path d="M489 54h7v7h-7zM496 54h7v7h-7zM503 54h7v7h-7zM510 54h7v7h-7zM517 54h7v7h-7zM489 61h7v7h-7zM489 68h7v7h-7zM496 68h7v7h-7zM503 68h7v7h-7zM510 68h7v7h-7zM489 75h7v7h-7zM489 82h7v7h-7zM489 89h7v7h-7zM489 96h7v7h-7zM496 96h7v7h-7zM503 96h7v7h-7zM510 96h7v7h-7zM517 96h7v7h-7z" />
+  </g>
+
+  <text x="188" y="132" fill="#6B5A49" font-family="Arial, sans-serif" font-size="13" font-weight="700" letter-spacing="3">SKYBLOCK PRODUCTIVITY</text>
+</svg>
