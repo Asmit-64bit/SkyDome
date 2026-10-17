@@ -8,16 +8,15 @@ import {
   SkillType,
   LibraryNote,
   ShopItem,
-  IslandSettings,
   UndoItem,
   ActiveTab,
   MiningBlockType,
   MiningTimerMode,
-  QuestPriority,
   NumberFontStyle,
   IslandLevelUpInfo,
   DailyChestState,
   ChestRewardResult,
+  IslandTheme,
 } from '../lib/types';
 import { soundManager } from '../lib/sound';
 
@@ -38,11 +37,16 @@ interface SkyDoState {
   islandLevel: number;
   totalXp: number;
   dailyXp: number;
+  dailyXpDate: string;
   dailyXpGoal: number;
   coins: number;
+  testCoinGrantApplied: boolean;
+  testLevelGrantApplied: boolean;
+  grantTestCoinsForDevelopment: () => void;
+  grantTestLevelForDevelopment: () => void;
   streak: number;
   lastActiveDate: string;
-  theme: 'day' | 'sunset' | 'cloudy' | 'night';
+  theme: IslandTheme;
   numberFont: NumberFontStyle;
   setNumberFont: (font: NumberFontStyle) => void;
   soundEnabled: boolean;
@@ -74,6 +78,8 @@ interface SkyDoState {
   deleteMinion: (id: string) => void;
   checkMinionToday: (id: string) => void;
   harvestAllMinions: () => { count: number; totalCoins: number; totalXp: number };
+  harvestFarm: () => { coins: number; crop: string } | null;
+  farmLastHarvestDate?: string;
   toggleMinionDate: (id: string, date: string) => void;
   upgradeMinion: (id: string) => void;
 
@@ -112,7 +118,7 @@ interface SkyDoState {
   // Settings & Storage
   setIslandName: (name: string) => void;
   setIslandTitle: (title: string) => void;
-  setTheme: (theme: 'day' | 'sunset' | 'cloudy' | 'night') => void;
+  setTheme: (theme: IslandTheme) => void;
   setSoundEnabled: (enabled: boolean) => void;
   setSoundVolume: (volume: number) => void;
   setReducedMotion: (reduced: boolean) => void;
@@ -140,13 +146,163 @@ export function getTodayDateString(): string {
 }
 
 export const ISLAND_LEVEL_PERKS: Record<number, string[]> = {
-  2: ['Unlocked: Lush Oak Island Tree 🌳', '+5% Base XP harvest multiplier'],
-  3: ['Unlocked: Mountain Cabin & Cozy Fireplace 🏡', '+10% Habit coin yield'],
+  2: ['Bazaar offer unlocked: Majestic Oak Tree (purchase to place) 🌳', '+5% Base XP harvest multiplier'],
+  3: ['Bazaar offer unlocked: Cozy Timber Cabin (purchase to place) 🏡', '+10% Habit coin yield'],
   4: ['Unlocked: Deep Ore Veins (Gold & Diamond Focus Blocks) 💎', 'Unlocked: Tabular Clock HUD'],
-  5: ['Unlocked: Sacred Mountain Waterfall & Pond 🌊', '+15% Quest Coin yield'],
-  6: ['Unlocked: Highland Windmill 🌾', 'Master Builder Badge'],
-  7: ['Unlocked: Celestial Sky Sanctuary ✨', 'Double Mystery Chest Bounty'],
+  5: ['Bazaar offer unlocked: Cascading Waterfall (purchase to place) 🌊', '+15% Quest Coin yield'],
+  6: ['Master Builder Badge'],
+  7: ['Bazaar offer unlocked: Friendly Cube Slime (purchase to place) ✨'],
+  12: ['New house unlocked: Birchwood Lodge 🏠'],
+  14: ['Bazaar pet unlocked: Cloud Chick 🐤'],
+  10: ['Bazaar offers unlocked: Cherry Blossom Tree and Sky Crystal Cluster (purchase to place) 🌸💎'],
+  20: ['Bazaar offer unlocked: Sky Lantern Walk (purchase to place) 🏮'],
+  21: ['Bazaar pet unlocked: Frost Wolf 🐺'],
+  28: ['Bazaar pet unlocked: Moonshadow Cat 🐱'],
+  35: ['Bazaar pet unlocked: Mossback Turtle 🐢'],
+  42: ['Bazaar pet unlocked: Ember Fox 🦊'],
+  30: ['Bazaar decoration unlocked: Sky Prism 💠'],
+  40: ['Farm crop unlocked: Melons 🍉', 'Bazaar decoration unlocked: Cloud Arch 🏛️'],
+  50: ['Bazaar decoration unlocked: Emerald Beacon 🟢'],
+  60: ['Bazaar decoration unlocked: Sunstone Fountain ⛲'],
+  70: ['Bazaar decoration unlocked: Moon Dial 🌙'],
+  80: ['Bazaar decoration unlocked: Aurora Shrine ✨', 'Galaxy theme unlocked in the Bazaar 🌌'],
+  90: ['Bazaar decoration unlocked: Cloud Guardian Statue 🗿'],
+  100: ['Level 100 achievement: Grand Trophy available in the Bazaar 🏆'],
+  8: ['Farm crop unlocked: Wheat 🌾'],
+  16: ['Farm crop unlocked: Carrots 🥕'],
+  24: ['Farm crop unlocked: Potatoes 🥔', 'New house unlocked: Stone Cottage 🏠'],
+  32: ['Farm crop unlocked: Beetroot 🫜'],
+  36: ['New house unlocked: Spruce Manor 🏠'],
+  48: ['Farm crop unlocked: Pumpkins 🎃', 'New house unlocked: Cloudtop Villa 🏠'],
+  56: ['Farm crop unlocked: Sugar Cane 🎋'],
 };
+
+// XP required to reach each level grows by 75 XP per level after the first.
+export function getIslandXpForLevel(level: number): number {
+  const completedLevels = Math.max(0, Math.floor(level) - 1);
+  return completedLevels * 300 + (75 * completedLevels * (completedLevels - 1)) / 2;
+}
+
+export function getIslandLevelForXp(totalXp: number): number {
+  let level = 1;
+  while (totalXp >= getIslandXpForLevel(level + 1)) level += 1;
+  return level;
+}
+
+export function getMinionHarvestReward(level: number): { resources: number; coins: number } {
+  const milestoneBonus = Math.floor(level / 5);
+  return {
+    resources: level * 2 + milestoneBonus,
+    coins: 15 + level * 2 + milestoneBonus * 10,
+  };
+}
+
+export function getMinionDaysUntilReady(minion: Minion, today = getTodayDateString()): number {
+  if (minion.frequency !== 'weekly' || minion.completedDates.length === 0) return 0;
+  const lastDate = minion.completedDates.filter((date) => /^\d{4}-\d{2}-\d{2}$/.test(date)).sort().at(-1);
+  if (!lastDate) return 0;
+  const toUtcDay = (date: string) => {
+    const [year, month, day] = date.split('-').map(Number);
+    return Date.UTC(year, month - 1, day) / 86_400_000;
+  };
+  return Math.max(0, 7 - (toUtcDay(today) - toUtcDay(lastDate)));
+}
+
+export function isMinionReadyToHarvest(minion: Minion, today = getTodayDateString()): boolean {
+  return getMinionDaysUntilReady(minion, today) === 0
+    && !minion.completedDates.includes(today);
+}
+
+function getDailyXpUpdate(state: Pick<SkyDoState, 'dailyXp' | 'dailyXpDate'>, gained: number) {
+  const today = getTodayDateString();
+  return {
+    dailyXp: (state.dailyXpDate === today ? state.dailyXp : 0) + gained,
+    dailyXpDate: today,
+  };
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function isFiniteNonNegative(value: unknown): value is number {
+    return typeof value === 'number' && Number.isFinite(value) && value >= 0 && value <= 1_000_000_000;
+}
+
+function isValidImport(parsed: unknown): parsed is Record<string, unknown> {
+  if (!isRecord(parsed) || (!Array.isArray(parsed.quests) && typeof parsed.islandName !== 'string')) return false;
+  if (parsed.islandName !== undefined && typeof parsed.islandName !== 'string') return false;
+  if (parsed.islandTitle !== undefined && typeof parsed.islandTitle !== 'string') return false;
+  for (const key of ['islandLevel', 'totalXp', 'dailyXp', 'dailyXpGoal', 'coins', 'streak']) {
+    if (parsed[key] !== undefined && !isFiniteNonNegative(parsed[key])) return false;
+  }
+  if (parsed.soundVolume !== undefined && (typeof parsed.soundVolume !== 'number' || !Number.isFinite(parsed.soundVolume) || parsed.soundVolume < 0 || parsed.soundVolume > 1)) return false;
+  for (const key of ['lastActiveDate', 'dailyXpDate', 'farmLastHarvestDate']) {
+    if (parsed[key] !== undefined && (typeof parsed[key] !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(parsed[key] as string))) return false;
+  }
+  if (parsed.quests !== undefined && (!Array.isArray(parsed.quests) || !parsed.quests.every((quest) =>
+    isRecord(quest) && typeof quest.id === 'string' && typeof quest.title === 'string'
+    && ['common', 'uncommon', 'rare', 'epic', 'legendary'].includes(String(quest.priority))
+    && typeof quest.completed === 'boolean' && Array.isArray(quest.tags) && quest.tags.every((tag) => typeof tag === 'string')
+    && Array.isArray(quest.subtasks) && quest.subtasks.every((task) => isRecord(task)
+      && typeof task.id === 'string' && typeof task.title === 'string' && typeof task.completed === 'boolean')
+    && isFiniteNonNegative(quest.xpReward) && isFiniteNonNegative(quest.coinReward)
+  ))) return false;
+  if (parsed.minions !== undefined && (!Array.isArray(parsed.minions) || !parsed.minions.every((minion) =>
+    isRecord(minion) && typeof minion.id === 'string' && typeof minion.name === 'string'
+    && typeof minion.habit === 'string' && typeof minion.resourceName === 'string'
+    && ['farming', 'mining', 'foraging', 'combat', 'fishing'].includes(String(minion.category))
+    && ['wheat', 'wood', 'iron', 'stone', 'water', 'carrot', 'diamond', 'book'].includes(String(minion.iconType))
+    && (minion.frequency === 'daily' || minion.frequency === 'weekly')
+    && Array.isArray(minion.completedDates) && minion.completedDates.every((date) => typeof date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(date))
+    && Number.isInteger(minion.level) && Number(minion.level) >= 1 && isFiniteNonNegative(minion.totalProduced)
+  ))) return false;
+  for (const key of ['skills', 'dailyChest', 'mining', 'timerSettings']) {
+    if (parsed[key] !== undefined && !isRecord(parsed[key])) return false;
+  }
+  if (parsed.shopItems !== undefined && !Array.isArray(parsed.shopItems)) return false;
+  if (parsed.notes !== undefined && !Array.isArray(parsed.notes)) return false;
+  if (parsed.mining !== undefined) {
+    const mining = parsed.mining as Record<string, unknown>;
+    const oresMined = mining.oresMined;
+    if (!['focus', 'short_break', 'long_break'].includes(String(mining.mode))
+      || !['idle', 'running', 'paused', 'finished'].includes(String(mining.state))
+      || !['stone', 'iron', 'gold', 'diamond'].includes(String(mining.currentBlock))
+      || !isFiniteNonNegative(mining.secondsRemaining) || Number(mining.secondsRemaining) > 7_200
+      || !isFiniteNonNegative(mining.totalFocusMinutesCompleted)
+      || !isRecord(oresMined)
+      || !['stone', 'iron', 'gold', 'diamond'].every((ore) => isFiniteNonNegative(oresMined[ore]))) return false;
+  }
+  if (parsed.dailyChest !== undefined) {
+    const chest = parsed.dailyChest as Record<string, unknown>;
+    if (!isFiniteNonNegative(chest.claimStreak)
+      || (chest.lastClaimDate !== undefined && (typeof chest.lastClaimDate !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(chest.lastClaimDate)))) return false;
+  }
+  if (parsed.timerSettings !== undefined) {
+    const settings = parsed.timerSettings as Record<string, unknown>;
+    if (!['focus', 'shortBreak', 'longBreak'].every((key) => isFiniteNonNegative(settings[key]))
+      || (settings.autoStartBreaks !== undefined && typeof settings.autoStartBreaks !== 'boolean')) return false;
+  }
+  if (parsed.skills !== undefined) {
+    const skills = parsed.skills as Record<string, unknown>;
+    if (!['farming', 'mining', 'combat', 'foraging', 'fishing'].every((key) => {
+      const skill = skills[key];
+      return isRecord(skill) && Number.isInteger(skill.level) && Number(skill.level) >= 1
+        && isFiniteNonNegative(skill.xp) && isFiniteNonNegative(skill.nextLevelXp)
+        && Array.isArray(skill.milestones);
+    })) return false;
+  }
+  if (parsed.notes !== undefined && !(parsed.notes as unknown[]).every((note) =>
+    isRecord(note) && typeof note.id === 'string' && typeof note.title === 'string'
+    && typeof note.content === 'string' && typeof note.folder === 'string'
+    && Array.isArray(note.tags) && note.tags.every((tag) => typeof tag === 'string')
+    && typeof note.pinned === 'boolean'
+  )) return false;
+  if (parsed.shopItems !== undefined && !(parsed.shopItems as unknown[]).every((item) =>
+    isRecord(item) && typeof item.id === 'string'
+  )) return false;
+  return true;
+}
 
 // Robust consecutive streak calculator
 export function calculateStreak(completedDates: string[]): { currentStreak: number; bestStreak: number } {
@@ -236,7 +392,7 @@ const initialSkills: Record<SkillType, Skill> = {
     milestones: [
       { level: 1, perk: 'Novice Planter (+5% habit coins)', unlocked: true },
       { level: 3, perk: 'Green Thumb (Habit streak protection)', unlocked: true },
-      { level: 5, perk: 'Master Harvester (Unlock Windmill decor)', unlocked: false },
+      { level: 5, perk: 'Master Harvester', unlocked: false },
       { level: 10, perk: 'Demeter Blessing (Double harvest drops)', unlocked: false },
     ],
   },
@@ -306,62 +462,324 @@ const initialShopItems: ShopItem[] = [
   {
     id: 'campfire',
     name: 'Torch Campfire',
-    category: 'cosmetic',
+    category: 'decoration',
     price: 0,
     description: 'Warm glowing hearth that flickers with your productivity streak.',
-    unlocked: true,
+    owned: true,
     equipped: true,
     icon: 'campfire',
   },
   {
+    id: 'farm_plot',
+    name: 'Sanctuary Farm Patch',
+    category: 'farm',
+    price: 90,
+    farmCrop: 'wheat',
+    farmIncome: 20,
+    description: 'A tidy wheat patch. Harvest it once per day to earn 20 coins.',
+    owned: false,
+    equipped: false,
+    requiredLevel: 8,
+    icon: 'farm',
+  },
+  {
+    id: 'farm_carrot', name: 'Carrot Field', category: 'farm', price: 260, farmCrop: 'carrot', farmIncome: 35,
+    description: 'A bright carrot patch that earns coins when harvested each day.', owned: false, equipped: false, requiredLevel: 16, icon: 'farm',
+  },
+  {
+    id: 'farm_potato', name: 'Potato Rows', category: 'farm', price: 420, farmCrop: 'potato', farmIncome: 50,
+    description: 'Hardy potato rows with a reliable daily coin harvest.', owned: false, equipped: false, requiredLevel: 24, icon: 'farm',
+  },
+  {
+    id: 'farm_beetroot', name: 'Beetroot Beds', category: 'farm', price: 650, farmCrop: 'beetroot', farmIncome: 70,
+    description: 'Deep red beetroot beds that bring a bigger daily payout.', owned: false, equipped: false, requiredLevel: 32, icon: 'farm',
+  },
+  {
+    id: 'farm_melon', name: 'Melon Patch', category: 'farm', price: 900, farmCrop: 'melon', farmIncome: 95,
+    description: 'A lush melon patch with a generous daily coin harvest.', owned: false, equipped: false, requiredLevel: 40, icon: 'farm',
+  },
+  {
+    id: 'farm_pumpkin', name: 'Pumpkin Field', category: 'farm', price: 1200, farmCrop: 'pumpkin', farmIncome: 125,
+    description: 'A broad pumpkin field built for a valuable daily harvest.', owned: false, equipped: false, requiredLevel: 48, icon: 'farm',
+  },
+  {
+    id: 'farm_sugarcane', name: 'Sugar Cane Grove', category: 'farm', price: 1600, farmCrop: 'sugarcane', farmIncome: 160,
+    description: 'Tall sugar cane stalks that deliver the richest farm payout.', owned: false, equipped: false, requiredLevel: 56, icon: 'farm',
+  },
+  {
+    id: 'blossom_tree',
+    name: 'Cherry Blossom Tree',
+    category: 'tree',
+    price: 600,
+    description: 'A flowering pink canopy that brings a soft spring glow to your island.',
+    owned: false,
+    equipped: false,
+    requiredLevel: 24,
+    icon: 'blossom',
+  },
+  {
+    id: 'birch_tree', name: 'Silver Birch', category: 'tree', price: 900,
+    description: 'A bright-barked birch with a light, airy green canopy.',
+    owned: false, equipped: false, requiredLevel: 10, icon: 'tree',
+  },
+  {
+    id: 'spruce_tree', name: 'Snowcap Spruce', category: 'tree', price: 1400,
+    description: 'A tall evergreen with a layered, tapered silhouette.',
+    owned: false, equipped: false, requiredLevel: 18, icon: 'tree',
+  },
+  {
+    id: 'willow_tree', name: 'Weeping Willow', category: 'tree', price: 2100,
+    description: 'A graceful willow with long leafy branches that drape toward the grass.',
+    owned: false, equipped: false, requiredLevel: 36, icon: 'tree',
+  },
+  {
+    id: 'maple_tree', name: 'Golden Maple', category: 'tree', price: 3000,
+    description: 'A warm autumn maple with a full canopy of amber and gold leaves.',
+    owned: false, equipped: false, requiredLevel: 48, icon: 'tree',
+  },
+  {
+    id: 'crystal_shrine',
+    name: 'Sky Crystal Cluster',
+    category: 'decoration',
+    price: 500,
+    oreCost: { stone: 8, iron: 2 },
+    description: 'A luminous blue crystal formation gathered from the island depths.',
+    owned: false,
+    equipped: false,
+    requiredLevel: 10,
+    icon: 'crystal',
+  },
+  {
+    id: 'sky_lanterns',
+    name: 'Sky Lantern Walk',
+    category: 'decoration',
+    price: 850,
+    oreCost: { stone: 12, iron: 4 },
+    description: 'Warm lanterns lining a quiet path above the clouds.',
+    owned: false,
+    equipped: false,
+    requiredLevel: 20,
+    icon: 'lantern',
+  },
+  {
+    id: 'sky_prism',
+    name: 'Sky Prism',
+    category: 'decoration',
+    price: 1400,
+    oreCost: { iron: 8, gold: 2 },
+    description: 'A radiant crystal centerpiece that catches the light above the clouds.',
+    owned: false,
+    equipped: false,
+    requiredLevel: 30,
+    icon: 'crystal',
+  },
+  {
+    id: 'cloud_arch',
+    name: 'Cloud Arch',
+    category: 'decoration',
+    price: 1800,
+    oreCost: { stone: 24, iron: 8 },
+    description: 'A pale stone gateway with a golden keystone.',
+    owned: false,
+    equipped: false,
+    requiredLevel: 40,
+    icon: 'decoration',
+  },
+  {
+    id: 'emerald_beacon',
+    name: 'Emerald Beacon',
+    category: 'decoration',
+    price: 2200,
+    oreCost: { iron: 12, gold: 5 },
+    description: 'A green-lit beacon marking your island’s growing renown.',
+    owned: false,
+    equipped: false,
+    requiredLevel: 50,
+    icon: 'crystal',
+  },
+  {
+    id: 'sunstone_fountain',
+    name: 'Sunstone Fountain',
+    category: 'decoration',
+    price: 2600,
+    oreCost: { stone: 30, gold: 8 },
+    description: 'A warm golden fountain with water spilling over its stone basin.',
+    owned: false,
+    equipped: false,
+    requiredLevel: 60,
+    icon: 'water',
+  },
+  {
+    id: 'moon_dial',
+    name: 'Moon Dial',
+    category: 'decoration',
+    price: 3000,
+    oreCost: { iron: 16, gold: 8 },
+    description: 'A celestial timepiece set into a moonlit stone plinth.',
+    owned: false,
+    equipped: false,
+    requiredLevel: 70,
+    icon: 'moon',
+  },
+  {
+    id: 'aurora_shrine',
+    name: 'Aurora Shrine',
+    category: 'decoration',
+    price: 3400,
+    oreCost: { gold: 12, diamond: 2 },
+    description: 'A tranquil shrine crowned with glowing blue and green crystals.',
+    owned: false,
+    equipped: false,
+    requiredLevel: 80,
+    icon: 'crystal',
+  },
+  {
+    id: 'cloud_guardian',
+    name: 'Cloud Guardian Statue',
+    category: 'decoration',
+    price: 3800,
+    oreCost: { stone: 40, diamond: 3 },
+    description: 'A proud stone sentinel keeping watch over your sanctuary.',
+    owned: false,
+    equipped: false,
+    requiredLevel: 90,
+    icon: 'decoration',
+  },
+  {
+    id: 'grand_trophy',
+    name: 'Grand Trophy',
+    category: 'decoration',
+    price: 0,
+    description: 'A golden monument awarded for reaching island level 100.',
+    owned: false,
+    equipped: false,
+    requiredLevel: 100,
+    icon: 'trophy',
+  },
+  {
     id: 'oak_tree',
     name: 'Majestic Oak Tree',
-    category: 'cosmetic',
+    category: 'tree',
     price: 60,
     description: 'A leafy oak with hanging vines providing shade to your sanctuary.',
-    unlocked: true,
-    equipped: true,
+    owned: false,
+    equipped: false,
+    requiredLevel: 2,
     icon: 'tree',
   },
   {
     id: 'wooden_cabin',
     name: 'Cozy Timber Cabin',
-    category: 'cosmetic',
+    category: 'house',
     price: 150,
     description: 'A sturdy wood-and-stone shelter where productivity takes root.',
-    unlocked: true,
-    equipped: true,
+    owned: false,
+    equipped: false,
+    requiredLevel: 3,
     icon: 'house',
+  },
+  {
+    id: 'birch_lodge', name: 'Birchwood Lodge', category: 'house', price: 500,
+    description: 'A bright timber lodge with pale walls and a welcoming roof.',
+    owned: false, equipped: false, requiredLevel: 12, icon: 'house',
+  },
+  {
+    id: 'stone_cottage', name: 'Stone Cottage', category: 'house', price: 900,
+    description: 'A sturdy slate-roof cottage built for a growing sanctuary.',
+    owned: false, equipped: false, requiredLevel: 24, icon: 'house',
+  },
+  {
+    id: 'spruce_manor', name: 'Spruce Manor', category: 'house', price: 1500,
+    description: 'A deep green manor with a bold, forest-inspired silhouette.',
+    owned: false, equipped: false, requiredLevel: 36, icon: 'house',
+  },
+  {
+    id: 'cloud_villa', name: 'Cloudtop Villa', category: 'house', price: 2400,
+    description: 'An airy pale-stone villa topped with a sky-blue roof.',
+    owned: false, equipped: false, requiredLevel: 48, icon: 'house',
   },
   {
     id: 'waterfall',
     name: 'Cascading Waterfall',
-    category: 'cosmetic',
+    category: 'water',
     price: 250,
     description: 'A pure stream tumbling into the endless cloud sea.',
-    unlocked: false,
+    owned: false,
     equipped: false,
+    requiredLevel: 5,
     icon: 'water',
-  },
-  {
-    id: 'windmill',
-    name: 'Cobblestone Windmill',
-    category: 'cosmetic',
-    price: 350,
-    description: 'A spinning rustic windmill watching over your Minion plots.',
-    unlocked: false,
-    equipped: false,
-    icon: 'windmill',
   },
   {
     id: 'pet_slime',
     name: 'Friendly Cube Slime',
-    category: 'companion',
+    category: 'pet',
     price: 450,
     description: 'A cheerful little bouncing block buddy that hops by your side.',
-    unlocked: false,
+    ability: '+10% XP from completed quests.',
+    owned: false,
     equipped: false,
+    requiredLevel: 7,
     icon: 'slime',
+  },
+  {
+    id: 'pet_chick',
+    name: 'Cloud Chick',
+    category: 'pet',
+    price: 550,
+    description: 'A sunny little chick with soft cloud-white wings.',
+    ability: '+10% coins from minion harvests.',
+    owned: false,
+    equipped: false,
+    requiredLevel: 14,
+    icon: 'chick',
+  },
+  {
+    id: 'pet_turtle',
+    name: 'Mossback Turtle',
+    category: 'pet',
+    price: 700,
+    description: 'A steady green friend carrying a cozy woodland shell.',
+    ability: '+10% XP from minion harvests.',
+    owned: false,
+    equipped: false,
+    requiredLevel: 35,
+    icon: 'turtle',
+  },
+  {
+    id: 'pet_fox',
+    name: 'Ember Fox',
+    category: 'pet',
+    price: 900,
+    description: 'A bright-tailed island fox that follows your adventures.',
+    ability: '+15% coins from daily chest rewards.',
+    owned: false,
+    equipped: false,
+    requiredLevel: 42,
+    icon: 'fox',
+  },
+  {
+    id: 'pet_wolf',
+    name: 'Frost Wolf',
+    category: 'pet',
+    price: 1100,
+    description: 'A loyal gray wolf with bright eyes and a fluffy tail.',
+    ability: '+10% XP from focus mining.',
+    owned: false,
+    equipped: false,
+    requiredLevel: 21,
+    icon: 'wolf',
+  },
+  {
+    id: 'pet_cat',
+    name: 'Moonshadow Cat',
+    category: 'pet',
+    price: 1250,
+    description: 'A soft gray cat with bright eyes, fine whiskers, and a curled tail.',
+    ability: '+10% coins from completed quests.',
+    owned: false,
+    equipped: false,
+    requiredLevel: 28,
+    icon: 'cat',
   },
   {
     id: 'theme_sunset',
@@ -369,7 +787,7 @@ const initialShopItems: ShopItem[] = [
     category: 'theme',
     price: 120,
     description: 'Golden hour palette: warm amber skies and soothing twilight horizons.',
-    unlocked: true,
+    owned: false,
     equipped: false,
     icon: 'sunset',
   },
@@ -379,7 +797,7 @@ const initialShopItems: ShopItem[] = [
     category: 'theme',
     price: 120,
     description: 'Calm, minimalist cloudy atmosphere for low-distraction deep work.',
-    unlocked: false,
+    owned: false,
     equipped: false,
     icon: 'cloud',
   },
@@ -389,11 +807,57 @@ const initialShopItems: ShopItem[] = [
     category: 'theme',
     price: 220,
     description: 'Deep navy celestial heavens with distant pixel constellations.',
-    unlocked: false,
+    owned: false,
     equipped: false,
     icon: 'moon',
   },
+  {
+    id: 'theme_galaxy',
+    name: 'Galaxy Sky',
+    category: 'theme',
+    price: 1800,
+    description: 'A deep violet space sky scattered with glowing stars and nebulae.',
+    owned: false,
+    equipped: false,
+    requiredLevel: 80,
+    icon: 'crystal',
+  },
 ];
+
+type LegacyShopItem = Partial<ShopItem> & { id: string; unlocked?: boolean; purchased?: boolean };
+
+function normalizeShopItems(items: unknown): ShopItem[] {
+  const savedItems = Array.isArray(items) ? items as LegacyShopItem[] : [];
+  const normalized = initialShopItems.map((catalogItem) => {
+    const saved = savedItems.find((item) => item?.id === catalogItem.id);
+    if (catalogItem.price === 0) {
+      const owned = catalogItem.id === 'grand_trophy' ? saved?.owned === true : true;
+      return { ...catalogItem, owned, equipped: owned && (saved?.equipped ?? catalogItem.equipped) };
+    }
+    if (!saved) return { ...catalogItem, owned: false, equipped: false };
+
+    // Old buggy seed data showed these paid items as unlocked/equipped by default.
+    const legacyStarterIds = ['oak_tree', 'wooden_cabin', 'theme_sunset'];
+    const legacySeededAsFree = legacyStarterIds.includes(catalogItem.id)
+      && saved.owned !== true && saved.purchased !== true;
+    const owned = !legacySeededAsFree && (typeof saved.owned === 'boolean'
+      ? saved.owned
+      : saved.purchased === true || saved.unlocked === true);
+
+    return { ...catalogItem, owned, equipped: owned && saved.equipped === true };
+  });
+  const equippedCategories = new Set<ShopItem['category']>();
+  return normalized.map((item) => {
+    if (!item.equipped) return item;
+    if (equippedCategories.has(item.category)) return { ...item, equipped: false };
+    equippedCategories.add(item.category);
+    return item;
+  });
+}
+
+function hasEquippedPet(items: ShopItem[], petId: string): boolean {
+  return items.some((item) => item.id === petId && item.category === 'pet' && item.owned && item.equipped);
+}
 
 // Helper to calculate recent 28 days
 function getSeedPastDates(count: number): string[] {
@@ -525,7 +989,7 @@ const initialQuests: Quest[] = [
   },
   {
     id: 'q3',
-    title: 'Morning review of SkyDo daily quests',
+    title: 'Morning review of SkyDome daily quests',
     description: 'Plan out the top 3 high-impact objectives.',
     priority: 'uncommon',
     completed: true,
@@ -576,10 +1040,10 @@ const initialQuests: Quest[] = [
 const initialNotes: LibraryNote[] = [
   {
     id: 'note_welcome',
-    title: 'SkyDo Island Compendium & Guide',
-    content: `# Welcome to SkyDo! 🏝️
+    title: 'SkyDome Island Compendium & Guide',
+    content: `# Welcome to SkyDome! 🏝️
 
-SkyDo transforms your daily productivity into a thriving **Minecraft Skyblock** sanctuary.
+SkyDome transforms your daily productivity into a thriving **Minecraft Skyblock** sanctuary.
 
 ### 🌟 Core Systems
 - **Island:** Your floating home. As you complete quests and build habits, your island levels up and expands!
@@ -656,13 +1120,17 @@ export const useSkyDoStore = create<SkyDoState>()(
       setLevelUpModal: (info) => set({ levelUpModal: info }),
 
       // Island defaults
-      islandName: 'SkyDo Sanctuary',
+      islandName: 'SkyDome Sanctuary',
       islandTitle: 'Skyblock Architect',
       islandLevel: 4,
       totalXp: 1160,
       dailyXp: 55,
+      dailyXpDate: getTodayDateString(),
       dailyXpGoal: 100,
       coins: 240,
+      farmLastHarvestDate: undefined,
+      testCoinGrantApplied: false,
+      testLevelGrantApplied: false,
       streak: 5,
       lastActiveDate: getTodayDateString(),
       theme: 'day',
@@ -690,6 +1158,7 @@ export const useSkyDoStore = create<SkyDoState>()(
           ...q,
           id: `quest_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
           completed: false,
+          rewardClaimed: false,
           xpReward,
           coinReward,
           order: state.quests.length,
@@ -713,16 +1182,19 @@ export const useSkyDoStore = create<SkyDoState>()(
         const willComplete = !quest.completed;
 
         if (willComplete) {
+          const shouldGrantReward = !quest.rewardClaimed;
           // Play sound
           soundManager.playQuestComplete(state.soundEnabled, state.soundVolume);
 
           // Add XP & coins
-          const newDailyXp = state.dailyXp + quest.xpReward;
-          const newTotalXp = state.totalXp + quest.xpReward;
-          const newCoins = state.coins + quest.coinReward;
+          const questXpReward = shouldGrantReward ? Math.round(quest.xpReward * (hasEquippedPet(state.shopItems, 'pet_slime') ? 1.1 : 1)) : 0;
+          const questCoinReward = shouldGrantReward ? Math.round(quest.coinReward * (hasEquippedPet(state.shopItems, 'pet_cat') ? 1.1 : 1)) : 0;
+          const dailyXpUpdate = shouldGrantReward ? getDailyXpUpdate(state, questXpReward) : {};
+          const newTotalXp = state.totalXp + questXpReward;
+          const newCoins = state.coins + questCoinReward;
 
           // Check if island leveled up
-          const newLevel = Math.floor(newTotalXp / 300) + 1;
+          const newLevel = getIslandLevelForXp(newTotalXp);
           let levelUpInfo = state.levelUpModal;
           if (newLevel > state.islandLevel) {
             soundManager.playLevelUp(state.soundEnabled, state.soundVolume);
@@ -733,8 +1205,10 @@ export const useSkyDoStore = create<SkyDoState>()(
           }
 
           // Add skill XP based on priority
-          const combatGain = quest.priority === 'legendary' ? 40 : quest.priority === 'epic' ? 25 : 10;
-          get().addSkillXp('combat', combatGain);
+          if (shouldGrantReward) {
+            const combatGain = quest.priority === 'legendary' ? 40 : quest.priority === 'epic' ? 25 : 10;
+            get().addSkillXp('combat', combatGain);
+          }
 
           set({
             quests: state.quests.map((q) =>
@@ -742,13 +1216,14 @@ export const useSkyDoStore = create<SkyDoState>()(
                 ? {
                     ...q,
                     completed: true,
+                    rewardClaimed: true,
                     completedAt: new Date().toISOString(),
                     // also mark subtasks completed
                     subtasks: q.subtasks.map((st) => ({ ...st, completed: true })),
                   }
                 : q
             ),
-            dailyXp: newDailyXp,
+            ...dailyXpUpdate,
             totalXp: newTotalXp,
             coins: newCoins,
             islandLevel: Math.max(state.islandLevel, newLevel),
@@ -765,7 +1240,7 @@ export const useSkyDoStore = create<SkyDoState>()(
           soundManager.playClick(state.soundEnabled, state.soundVolume);
           set({
             quests: state.quests.map((q) =>
-              q.id === id ? { ...q, completed: false, completedAt: undefined } : q
+              q.id === id ? { ...q, completed: false, completedAt: undefined, rewardClaimed: q.rewardClaimed ?? true } : q
             ),
           });
         }
@@ -825,11 +1300,12 @@ export const useSkyDoStore = create<SkyDoState>()(
           const hasIncomplete = updatedSubtasks.some((st) => !st.completed);
 
           if (allDone && !q.completed) {
-            questToAutoClaim = { ...q, subtasks: updatedSubtasks };
+            questToAutoClaim = { ...q, subtasks: updatedSubtasks, rewardClaimed: q.rewardClaimed ?? false };
             return {
               ...q,
               subtasks: updatedSubtasks,
               completed: true,
+              rewardClaimed: true,
               completedAt: new Date().toISOString(),
             };
           }
@@ -840,6 +1316,7 @@ export const useSkyDoStore = create<SkyDoState>()(
               subtasks: updatedSubtasks,
               completed: false,
               completedAt: undefined,
+              rewardClaimed: q.rewardClaimed ?? true,
             };
           }
 
@@ -851,12 +1328,15 @@ export const useSkyDoStore = create<SkyDoState>()(
 
         if (questToAutoClaim) {
           const qc = questToAutoClaim as Quest;
+          const shouldGrantReward = !qc.rewardClaimed;
           soundManager.playQuestComplete(state.soundEnabled, state.soundVolume);
-          const newDailyXp = state.dailyXp + qc.xpReward;
-          const newTotalXp = state.totalXp + qc.xpReward;
-          const newCoins = state.coins + qc.coinReward;
+          const questXpReward = shouldGrantReward ? Math.round(qc.xpReward * (hasEquippedPet(state.shopItems, 'pet_slime') ? 1.1 : 1)) : 0;
+          const questCoinReward = shouldGrantReward ? Math.round(qc.coinReward * (hasEquippedPet(state.shopItems, 'pet_cat') ? 1.1 : 1)) : 0;
+          const dailyXpUpdate = shouldGrantReward ? getDailyXpUpdate(state, questXpReward) : {};
+          const newTotalXp = state.totalXp + questXpReward;
+          const newCoins = state.coins + questCoinReward;
 
-          const newLevel = Math.floor(newTotalXp / 300) + 1;
+          const newLevel = getIslandLevelForXp(newTotalXp);
           let levelUpInfo = state.levelUpModal;
           if (newLevel > state.islandLevel) {
             soundManager.playLevelUp(state.soundEnabled, state.soundVolume);
@@ -866,11 +1346,11 @@ export const useSkyDoStore = create<SkyDoState>()(
             };
           }
 
-          get().addSkillXp('combat', qc.priority === 'legendary' ? 40 : qc.priority === 'epic' ? 25 : 10);
+          if (shouldGrantReward) get().addSkillXp('combat', qc.priority === 'legendary' ? 40 : qc.priority === 'epic' ? 25 : 10);
 
           set({
             quests: updatedQuests,
-            dailyXp: newDailyXp,
+            ...dailyXpUpdate,
             totalXp: newTotalXp,
             coins: newCoins,
             islandLevel: Math.max(state.islandLevel, newLevel),
@@ -946,38 +1426,36 @@ export const useSkyDoStore = create<SkyDoState>()(
         const state = get();
         const today = getTodayDateString();
         const minion = state.minions.find((m) => m.id === id);
-        if (!minion) return;
+        if (!minion || !isMinionReadyToHarvest(minion, today)) return;
 
-        const isAlreadyDone = minion.completedDates.includes(today);
+        soundManager.playHarvest(state.soundEnabled, state.soundVolume);
+        const newDates = [today, ...minion.completedDates];
+        const { currentStreak, bestStreak } = calculateStreak(newDates);
+        const reward = getMinionHarvestReward(minion.level);
+        const dropAmount = reward.resources;
 
-        if (!isAlreadyDone) {
-          soundManager.playHarvest(state.soundEnabled, state.soundVolume);
-          const newDates = [today, ...minion.completedDates];
-          const { currentStreak, bestStreak } = calculateStreak(newDates);
-          const dropAmount = minion.level * 2;
+        // Equipped pets boost minion harvest rewards.
+        const xpWon = Math.round(25 * (hasEquippedPet(state.shopItems, 'pet_turtle') ? 1.1 : 1));
+        const coinsWon = Math.round(reward.coins * (hasEquippedPet(state.shopItems, 'pet_chick') ? 1.1 : 1));
+        get().addSkillXp('farming', xpWon);
 
-          // Gain farming / habit XP & coins
-          get().addSkillXp('farming', 25);
-          const xpWon = 25;
-          const coinsWon = 15 + minion.level * 2;
+        const dailyXpUpdate = getDailyXpUpdate(state, xpWon);
+        const newTotalXp = state.totalXp + xpWon;
+        const newCoins = state.coins + coinsWon;
 
-          const newDailyXp = state.dailyXp + xpWon;
-          const newTotalXp = state.totalXp + xpWon;
-          const newCoins = state.coins + coinsWon;
+        const newLevel = getIslandLevelForXp(newTotalXp);
+        let levelUpInfo = state.levelUpModal;
+        if (newLevel > state.islandLevel) {
+          soundManager.playLevelUp(state.soundEnabled, state.soundVolume);
+          levelUpInfo = {
+            level: newLevel,
+            unlockedPerks: ISLAND_LEVEL_PERKS[newLevel] || [`Sanctuary reached Level ${newLevel}! Expansion unlocked.`],
+          };
+        }
 
-          const newLevel = Math.floor(newTotalXp / 300) + 1;
-          let levelUpInfo = state.levelUpModal;
-          if (newLevel > state.islandLevel) {
-            soundManager.playLevelUp(state.soundEnabled, state.soundVolume);
-            levelUpInfo = {
-              level: newLevel,
-              unlockedPerks: ISLAND_LEVEL_PERKS[newLevel] || [`Sanctuary reached Level ${newLevel}! Expansion unlocked.`],
-            };
-          }
-
-          set({
+        set({
             coins: newCoins,
-            dailyXp: newDailyXp,
+            ...dailyXpUpdate,
             totalXp: newTotalXp,
             islandLevel: Math.max(state.islandLevel, newLevel),
             levelUpModal: levelUpInfo,
@@ -992,30 +1470,13 @@ export const useSkyDoStore = create<SkyDoState>()(
                   }
                 : m
             ),
-          });
-        } else {
-          // Toggle off
-          soundManager.playClick(state.soundEnabled, state.soundVolume);
-          const newDates = minion.completedDates.filter((d) => d !== today);
-          const { currentStreak } = calculateStreak(newDates);
-          set({
-            minions: state.minions.map((m) =>
-              m.id === id
-                ? {
-                    ...m,
-                    completedDates: newDates,
-                    streak: currentStreak,
-                  }
-                : m
-            ),
-          });
-        }
+        });
       },
 
       harvestAllMinions: () => {
         const state = get();
         const today = getTodayDateString();
-        const readyMinions = state.minions.filter((m) => !m.completedDates.includes(today));
+        const readyMinions = state.minions.filter((m) => isMinionReadyToHarvest(m, today));
         if (readyMinions.length === 0) return { count: 0, totalCoins: 0, totalXp: 0 };
 
         soundManager.playHarvest(state.soundEnabled, state.soundVolume);
@@ -1024,13 +1485,14 @@ export const useSkyDoStore = create<SkyDoState>()(
         let totalXpGain = 0;
 
         const updatedMinions = state.minions.map((m) => {
-          if (m.completedDates.includes(today)) return m;
+          if (!isMinionReadyToHarvest(m, today)) return m;
 
           const newDates = [today, ...m.completedDates];
           const { currentStreak, bestStreak } = calculateStreak(newDates);
-          const dropAmount = m.level * 2;
-          const coinsWon = 15 + m.level * 2;
-          const xpWon = 25;
+          const reward = getMinionHarvestReward(m.level);
+          const dropAmount = reward.resources;
+          const coinsWon = Math.round(reward.coins * (hasEquippedPet(state.shopItems, 'pet_chick') ? 1.1 : 1));
+          const xpWon = Math.round(25 * (hasEquippedPet(state.shopItems, 'pet_turtle') ? 1.1 : 1));
 
           totalCoinsGain += coinsWon;
           totalXpGain += xpWon;
@@ -1046,10 +1508,10 @@ export const useSkyDoStore = create<SkyDoState>()(
 
         get().addSkillXp('farming', totalXpGain);
 
-        const newDailyXp = state.dailyXp + totalXpGain;
+        const dailyXpUpdate = getDailyXpUpdate(state, totalXpGain);
         const newTotalXp = state.totalXp + totalXpGain;
         const newCoins = state.coins + totalCoinsGain;
-        const newLevel = Math.floor(newTotalXp / 300) + 1;
+        const newLevel = getIslandLevelForXp(newTotalXp);
         let levelUpInfo = state.levelUpModal;
         if (newLevel > state.islandLevel) {
           soundManager.playLevelUp(state.soundEnabled, state.soundVolume);
@@ -1062,7 +1524,7 @@ export const useSkyDoStore = create<SkyDoState>()(
         set({
           minions: updatedMinions,
           coins: newCoins,
-          dailyXp: newDailyXp,
+          ...dailyXpUpdate,
           totalXp: newTotalXp,
           islandLevel: Math.max(state.islandLevel, newLevel),
           levelUpModal: levelUpInfo,
@@ -1071,7 +1533,18 @@ export const useSkyDoStore = create<SkyDoState>()(
         return { count: readyMinions.length, totalCoins: totalCoinsGain, totalXp: totalXpGain };
       },
 
+      harvestFarm: () => {
+        const state = get();
+        const farm = state.shopItems.find((item) => item.category === 'farm' && item.owned && item.equipped && item.farmIncome);
+        const today = getTodayDateString();
+        if (!farm?.farmIncome || state.farmLastHarvestDate === today) return null;
+        soundManager.playHarvest(state.soundEnabled, state.soundVolume);
+        set({ coins: state.coins + farm.farmIncome, farmLastHarvestDate: today });
+        return { coins: farm.farmIncome, crop: farm.farmCrop ?? 'crops' };
+      },
+
       toggleMinionDate: (id, date) => {
+        if (date === getTodayDateString()) return;
         const state = get();
         soundManager.playClick(state.soundEnabled, state.soundVolume);
         set({
@@ -1128,13 +1601,23 @@ export const useSkyDoStore = create<SkyDoState>()(
 
       startMiningTimer: () => {
         const state = get();
+        if (state.mining.state === 'running') return;
         soundManager.playClick(state.soundEnabled, state.soundVolume);
         const now = Date.now();
+        const configuredMinutes = state.mining.mode === 'focus'
+          ? state.timerSettings.focus
+          : state.mining.mode === 'short_break'
+            ? state.timerSettings.shortBreak
+            : state.timerSettings.longBreak;
+        const secondsRemaining = state.mining.state === 'finished' || state.mining.secondsRemaining <= 0
+          ? configuredMinutes * 60
+          : state.mining.secondsRemaining;
         set((s) => ({
           mining: {
             ...s.mining,
             state: 'running',
-            endTimestamp: now + s.mining.secondsRemaining * 1000,
+            secondsRemaining,
+            endTimestamp: now + secondsRemaining * 1000,
             lastTickTimestamp: now,
           },
         }));
@@ -1142,6 +1625,7 @@ export const useSkyDoStore = create<SkyDoState>()(
 
       pauseMiningTimer: () => {
         const state = get();
+        if (state.mining.state !== 'running') return;
         soundManager.playClick(state.soundEnabled, state.soundVolume);
         set((s) => ({
           mining: {
@@ -1154,6 +1638,7 @@ export const useSkyDoStore = create<SkyDoState>()(
 
       resumeMiningTimer: () => {
         const state = get();
+        if (state.mining.state !== 'paused' || state.mining.secondsRemaining <= 0) return;
         soundManager.playClick(state.soundEnabled, state.soundVolume);
         const now = Date.now();
         set((s) => ({
@@ -1283,6 +1768,7 @@ export const useSkyDoStore = create<SkyDoState>()(
 
       finishMiningTimer: () => {
         const state = get();
+        if (state.mining.state !== 'running') return;
         soundManager.playBreakBlock(state.soundEnabled, state.soundVolume);
 
         if (state.mining.mode === 'focus') {
@@ -1290,7 +1776,8 @@ export const useSkyDoStore = create<SkyDoState>()(
           const oreType = state.mining.currentBlock;
           const oreBonusXp =
             oreType === 'diamond' ? 50 : oreType === 'gold' ? 35 : oreType === 'iron' ? 25 : 15;
-          const xpEarned = focusMins * 2 + oreBonusXp;
+          const baseXpEarned = focusMins * 2 + oreBonusXp;
+          const xpEarned = Math.round(baseXpEarned * (hasEquippedPet(state.shopItems, 'pet_wolf') ? 1.1 : 1));
           const coinEarned =
             Math.round(focusMins * 1.5) +
             (oreType === 'diamond' ? 20 : oreType === 'gold' ? 12 : oreType === 'iron' ? 8 : 4);
@@ -1301,11 +1788,11 @@ export const useSkyDoStore = create<SkyDoState>()(
           const ores = { ...state.mining.oresMined };
           ores[oreType] = (ores[oreType] || 0) + 1;
 
-          const newDailyXp = state.dailyXp + xpEarned;
+          const dailyXpUpdate = getDailyXpUpdate(state, xpEarned);
           const newTotalXp = state.totalXp + xpEarned;
           const newCoins = state.coins + coinEarned;
 
-          const newLevel = Math.floor(newTotalXp / 300) + 1;
+          const newLevel = getIslandLevelForXp(newTotalXp);
           let levelUpInfo = state.levelUpModal;
           if (newLevel > state.islandLevel) {
             soundManager.playLevelUp(state.soundEnabled, state.soundVolume);
@@ -1320,7 +1807,7 @@ export const useSkyDoStore = create<SkyDoState>()(
 
           set((s) => ({
             coins: newCoins,
-            dailyXp: newDailyXp,
+            ...dailyXpUpdate,
             totalXp: newTotalXp,
             islandLevel: Math.max(s.islandLevel, newLevel),
             levelUpModal: levelUpInfo,
@@ -1493,6 +1980,25 @@ export const useSkyDoStore = create<SkyDoState>()(
 
       // Chest & Shop
       shopItems: initialShopItems,
+      grantTestCoinsForDevelopment: () => {
+        if (process.env.NODE_ENV !== 'development') return;
+        const state = get();
+        if (state.testCoinGrantApplied) return;
+        set({
+          coins: state.coins + 100_000,
+          testCoinGrantApplied: true,
+        });
+      },
+      grantTestLevelForDevelopment: () => {
+        if (process.env.NODE_ENV !== 'development') return;
+        const state = get();
+        if (state.testLevelGrantApplied) return;
+        set({
+          islandLevel: 100,
+          totalXp: Math.max(state.totalXp, getIslandXpForLevel(100)),
+          testLevelGrantApplied: true,
+        });
+      },
       dailyChest: {
         lastClaimDate: undefined,
         claimStreak: 0,
@@ -1500,7 +2006,11 @@ export const useSkyDoStore = create<SkyDoState>()(
       buyShopItem: (id) => {
         const state = get();
         const item = state.shopItems.find((i) => i.id === id);
-        if (!item || item.unlocked || state.coins < item.price) return;
+        const hasOreMaterials = Object.entries(item?.oreCost ?? {}).every(
+          ([ore, amount]) => state.mining.oresMined[ore as MiningBlockType] >= (amount ?? 0)
+        );
+        if (!item || item.owned || state.coins < item.price
+          || !hasOreMaterials || state.islandLevel < (item.requiredLevel ?? 1)) return;
 
         soundManager.playLevelUp(state.soundEnabled, state.soundVolume);
 
@@ -1509,14 +2019,26 @@ export const useSkyDoStore = create<SkyDoState>()(
           if (item.id === 'theme_sunset') newTheme = 'sunset';
           if (item.id === 'theme_cloudy') newTheme = 'cloudy';
           if (item.id === 'theme_night') newTheme = 'night';
+          if (item.id === 'theme_galaxy') newTheme = 'galaxy';
         }
 
         set({
           coins: state.coins - item.price,
           theme: newTheme,
-          shopItems: state.shopItems.map((i) =>
-            i.id === id ? { ...i, unlocked: true, equipped: true } : i
-          ),
+          mining: {
+            ...state.mining,
+            oresMined: Object.fromEntries(
+              Object.entries(state.mining.oresMined).map(([ore, amount]) => [
+                ore,
+                amount - (item.oreCost?.[ore as MiningBlockType] ?? 0),
+              ])
+            ) as MiningState['oresMined'],
+          },
+          shopItems: state.shopItems.map((i) => {
+            if (i.id === id) return { ...i, owned: true, equipped: true };
+            if (i.category === item.category) return { ...i, equipped: false };
+            return i;
+          }),
         });
       },
 
@@ -1524,22 +2046,20 @@ export const useSkyDoStore = create<SkyDoState>()(
         const state = get();
         soundManager.playClick(state.soundEnabled, state.soundVolume);
         const item = state.shopItems.find((i) => i.id === id);
-        if (!item || !item.unlocked) return;
+        if (!item?.owned || (!item.equipped && state.islandLevel < (item.requiredLevel ?? 1))) return;
 
+        const willEquip = !item.equipped;
         let newTheme = state.theme;
         if (item.category === 'theme') {
-          if (item.id === 'theme_sunset') newTheme = 'sunset';
-          if (item.id === 'theme_cloudy') newTheme = 'cloudy';
-          if (item.id === 'theme_night') newTheme = 'night';
+          const selectedTheme = item.id.replace('theme_', '') as IslandTheme;
+          newTheme = willEquip ? selectedTheme : state.theme === selectedTheme ? 'day' : state.theme;
         }
 
         set({
           theme: newTheme,
           shopItems: state.shopItems.map((i) => {
-            if (i.id === id) return { ...i, equipped: !i.equipped };
-            // If category is theme, unequip other themes
-            if (item.category === 'theme' && i.category === 'theme') {
-              return { ...i, equipped: false };
+            if (i.category === item.category) {
+              return { ...i, equipped: i.id === id ? willEquip : false };
             }
             return i;
           }),
@@ -1596,12 +2116,12 @@ export const useSkyDoStore = create<SkyDoState>()(
         };
 
         const rewardConfig = tierTable[streakTier] || tierTable[7];
-        const coinsWon = rewardConfig.coins;
+        const coinsWon = Math.round(rewardConfig.coins * (hasEquippedPet(state.shopItems, 'pet_fox') ? 1.15 : 1));
         const xpWon = rewardConfig.xp;
         const bonusOre = rewardConfig.ore;
         const bonusOreCount = rewardConfig.count || 0;
 
-        const newDailyXp = state.dailyXp + xpWon;
+        const dailyXpUpdate = getDailyXpUpdate(state, xpWon);
         const newTotalXp = state.totalXp + xpWon;
         const newCoins = state.coins + coinsWon;
 
@@ -1612,7 +2132,7 @@ export const useSkyDoStore = create<SkyDoState>()(
         }
 
         // 4. Check for Island Sanctuary Level Up
-        const newLevel = Math.floor(newTotalXp / 300) + 1;
+        const newLevel = getIslandLevelForXp(newTotalXp);
         let levelUpInfo = state.levelUpModal;
         if (newLevel > state.islandLevel) {
           soundManager.playLevelUp(state.soundEnabled, state.soundVolume);
@@ -1627,7 +2147,7 @@ export const useSkyDoStore = create<SkyDoState>()(
 
         set({
           coins: newCoins,
-          dailyXp: newDailyXp,
+          ...dailyXpUpdate,
           totalXp: newTotalXp,
           islandLevel: Math.max(state.islandLevel, newLevel),
           levelUpModal: levelUpInfo,
@@ -1656,11 +2176,17 @@ export const useSkyDoStore = create<SkyDoState>()(
       setIslandTitle: (title) => set({ islandTitle: title }),
       setTheme: (theme) => {
         const state = get();
+        if (theme !== 'day' && !state.shopItems.find((item) => item.id === `theme_${theme}`)?.owned) return;
         soundManager.playClick(state.soundEnabled, state.soundVolume);
         if (typeof document !== 'undefined') {
           document.documentElement.setAttribute('data-theme', theme);
         }
-        set({ theme });
+        set({
+          theme,
+          shopItems: state.shopItems.map((item) => item.category === 'theme'
+            ? { ...item, equipped: item.id === `theme_${theme}` }
+            : item),
+        });
       },
       setNumberFont: (font) => {
         const state = get();
@@ -1691,7 +2217,7 @@ export const useSkyDoStore = create<SkyDoState>()(
         } else if (toast.type === 'quest_complete' && toast.data.id) {
           set({
             quests: state.quests.map((q) =>
-              q.id === toast.data.id ? { ...q, completed: false } : q
+              q.id === toast.data.id ? { ...q, completed: false, completedAt: undefined, rewardClaimed: true } : q
             ),
             undoToast: null,
           });
@@ -1711,8 +2237,18 @@ export const useSkyDoStore = create<SkyDoState>()(
           islandLevel: state.islandLevel,
           totalXp: state.totalXp,
           coins: state.coins,
+          dailyXp: state.dailyXp,
+          dailyXpDate: state.dailyXpDate,
+          dailyXpGoal: state.dailyXpGoal,
           streak: state.streak,
+          lastActiveDate: state.lastActiveDate,
           theme: state.theme,
+          numberFont: state.numberFont,
+          soundEnabled: state.soundEnabled,
+          soundVolume: state.soundVolume,
+          reducedMotion: state.reducedMotion,
+          timerSettings: state.timerSettings,
+          onboardingCompleted: state.onboardingCompleted,
           quests: state.quests,
           minions: state.minions,
           skills: state.skills,
@@ -1720,6 +2256,7 @@ export const useSkyDoStore = create<SkyDoState>()(
           shopItems: state.shopItems,
           dailyChest: state.dailyChest,
           mining: state.mining,
+          farmLastHarvestDate: state.farmLastHarvestDate,
           exportedAt: new Date().toISOString(),
         };
         return JSON.stringify(data, null, 2);
@@ -1727,24 +2264,59 @@ export const useSkyDoStore = create<SkyDoState>()(
 
       importDataJson: (jsonString) => {
         try {
-          const parsed = JSON.parse(jsonString);
-          if (!parsed.quests && !parsed.islandName) {
-            return false;
-          }
+          const parsed: unknown = JSON.parse(jsonString);
+          if (!isValidImport(parsed)) return false;
+          const current = get();
+          const shopItems = normalizeShopItems(parsed.shopItems || get().shopItems);
+          const requestedTheme = typeof parsed.theme === 'string' ? parsed.theme : current.theme;
+          const theme: IslandTheme = requestedTheme === 'day'
+            ? 'day'
+            : shopItems.some((item) => item.id === `theme_${requestedTheme}` && item.owned)
+              ? requestedTheme as IslandTheme
+              : 'day';
+          const importedXp = typeof parsed.totalXp === 'number' ? parsed.totalXp : current.totalXp;
+          const importedLevel = typeof parsed.islandLevel === 'number'
+            ? Math.max(parsed.islandLevel, getIslandLevelForXp(importedXp))
+            : Math.max(current.islandLevel, getIslandLevelForXp(importedXp));
+          const importedMining = isRecord(parsed.mining) ? parsed.mining as unknown as MiningState : current.mining;
+          const safeTimerSettings = isRecord(parsed.timerSettings)
+            ? {
+                focus: Math.min(120, Math.max(5, Number(parsed.timerSettings.focus) || current.timerSettings.focus)),
+                shortBreak: Math.min(30, Math.max(1, Number(parsed.timerSettings.shortBreak) || current.timerSettings.shortBreak)),
+                longBreak: Math.min(60, Math.max(5, Number(parsed.timerSettings.longBreak) || current.timerSettings.longBreak)),
+                autoStartBreaks: parsed.timerSettings.autoStartBreaks === true,
+              }
+            : current.timerSettings;
+          const today = getTodayDateString();
+          const importedDailyXpDate = typeof parsed.dailyXpDate === 'string' ? parsed.dailyXpDate : today;
           set({
-            islandName: parsed.islandName || get().islandName,
-            islandTitle: parsed.islandTitle || get().islandTitle,
-            islandLevel: parsed.islandLevel || get().islandLevel,
-            totalXp: parsed.totalXp || get().totalXp,
-            coins: parsed.coins ?? get().coins,
-            streak: parsed.streak ?? get().streak,
-            theme: parsed.theme || get().theme,
-            quests: parsed.quests || get().quests,
-            minions: parsed.minions || get().minions,
-            skills: parsed.skills || get().skills,
-            notes: parsed.notes || get().notes,
-            shopItems: parsed.shopItems || get().shopItems,
-            dailyChest: parsed.dailyChest || get().dailyChest,
+            islandName: typeof parsed.islandName === 'string' ? parsed.islandName : current.islandName,
+            islandTitle: typeof parsed.islandTitle === 'string' ? parsed.islandTitle : current.islandTitle,
+            islandLevel: importedLevel,
+            totalXp: importedXp,
+            dailyXp: importedDailyXpDate === today && typeof parsed.dailyXp === 'number' ? parsed.dailyXp : 0,
+            dailyXpDate: today,
+            dailyXpGoal: typeof parsed.dailyXpGoal === 'number' ? parsed.dailyXpGoal : current.dailyXpGoal,
+            coins: typeof parsed.coins === 'number' ? parsed.coins : current.coins,
+            streak: typeof parsed.streak === 'number' ? parsed.streak : current.streak,
+            lastActiveDate: typeof parsed.lastActiveDate === 'string' ? parsed.lastActiveDate : current.lastActiveDate,
+            theme,
+            numberFont: parsed.numberFont === 'clean' || parsed.numberFont === 'silkscreen' || parsed.numberFont === 'pixel' ? parsed.numberFont : current.numberFont,
+            soundEnabled: typeof parsed.soundEnabled === 'boolean' ? parsed.soundEnabled : current.soundEnabled,
+            soundVolume: typeof parsed.soundVolume === 'number' ? Math.min(1, parsed.soundVolume) : current.soundVolume,
+            reducedMotion: typeof parsed.reducedMotion === 'boolean' ? parsed.reducedMotion : current.reducedMotion,
+            timerSettings: safeTimerSettings,
+            onboardingCompleted: typeof parsed.onboardingCompleted === 'boolean' ? parsed.onboardingCompleted : current.onboardingCompleted,
+            farmLastHarvestDate: typeof parsed.farmLastHarvestDate === 'string' ? parsed.farmLastHarvestDate : current.farmLastHarvestDate,
+            quests: Array.isArray(parsed.quests) ? parsed.quests.map((quest) => ({ ...quest, rewardClaimed: quest.rewardClaimed === true || quest.completed })) as Quest[] : current.quests,
+            minions: Array.isArray(parsed.minions) ? parsed.minions as Minion[] : current.minions,
+            skills: isRecord(parsed.skills) ? parsed.skills as unknown as Record<SkillType, Skill> : current.skills,
+            notes: Array.isArray(parsed.notes) ? parsed.notes as LibraryNote[] : current.notes,
+            mining: { ...importedMining, state: importedMining.state === 'running' ? 'paused' : importedMining.state, endTimestamp: undefined },
+            shopItems: shopItems.map((item) => item.category === 'theme'
+              ? { ...item, equipped: item.id === `theme_${theme}` }
+              : item),
+            dailyChest: isRecord(parsed.dailyChest) ? parsed.dailyChest as unknown as DailyChestState : current.dailyChest,
           });
           return true;
         } catch {
@@ -1754,15 +2326,31 @@ export const useSkyDoStore = create<SkyDoState>()(
 
       resetAllData: () => {
         set({
-          islandName: 'SkyDo Sanctuary',
+          islandName: 'SkyDome Sanctuary',
           islandTitle: 'Skyblock Architect',
           islandLevel: 4,
           totalXp: 1160,
           dailyXp: 55,
+          dailyXpDate: getTodayDateString(),
+          dailyXpGoal: 100,
           coins: 240,
           streak: 5,
+          lastActiveDate: getTodayDateString(),
           theme: 'day',
           numberFont: 'tabular',
+          soundEnabled: false,
+          soundVolume: 0.5,
+          reducedMotion: false,
+          timerSettings: { focus: 25, shortBreak: 5, longBreak: 15, autoStartBreaks: false },
+          onboardingCompleted: true,
+          activeTab: 'island',
+          commandPaletteOpen: false,
+          quickAddModalOpen: false,
+          levelUpModal: null,
+          undoToast: null,
+          farmLastHarvestDate: undefined,
+          testCoinGrantApplied: false,
+          testLevelGrantApplied: false,
           quests: initialQuests,
           minions: initialMinions,
           skills: initialSkills,
@@ -1786,7 +2374,37 @@ export const useSkyDoStore = create<SkyDoState>()(
       },
     }),
     {
-      name: 'skydo_storage_v1',
+      name: 'SkyDo_storage_v1',
+      merge: (persistedState, currentState) => {
+        const persisted = persistedState as Partial<SkyDoState>;
+        const shopItems = normalizeShopItems(persisted.shopItems ?? currentState.shopItems);
+        const today = getTodayDateString();
+        const hasDailyXpForToday = persisted.dailyXpDate === today;
+        const requestedTheme = persisted.theme ?? currentState.theme;
+        const theme = requestedTheme === 'day' || shopItems.some(
+          (item) => item.id === `theme_${requestedTheme}` && item.owned
+        ) ? requestedTheme : 'day';
+        return {
+          ...currentState,
+          ...persisted,
+          dailyXpDate: today,
+          dailyXp: hasDailyXpForToday ? persisted.dailyXp ?? currentState.dailyXp : 0,
+          theme,
+          shopItems: shopItems.map((item) => item.category === 'theme'
+            ? { ...item, equipped: item.id === `theme_${theme}` }
+            : item),
+        };
+      },
+      onRehydrateStorage: () => (state) => {
+        if (state && process.env.NODE_ENV === 'development') {
+          state.grantTestCoinsForDevelopment();
+          state.grantTestLevelForDevelopment();
+        }
+        if (state && state.islandName === 'SkyDo Sanctuary') {
+          state.islandName = 'SkyDome Sanctuary';
+        }
+      },
     }
   )
 );
+export const useSkyDomeStore = useSkyDoStore;

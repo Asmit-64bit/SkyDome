@@ -16,7 +16,7 @@ export const PixelBadge: React.FC<PixelBadgeProps> = ({
   children,
   className = '',
 }) => {
-  // Muted tones, strictly NO neon, NO purple
+  // Muted tones, strictly , NO purple
   const priorityStyles: Record<QuestPriority, { bg: string; border: string; text: string; label: string }> = {
     common: {
       bg: 'bg-[#EAEBED]',

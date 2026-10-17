@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { Minion, MinionIcon } from '../../lib/types';
-import { useSkyDoStore, getTodayDateString } from '../../store/useSkyDoStore';
+import { getMinionDaysUntilReady, getMinionHarvestReward, isMinionReadyToHarvest, useSkyDoStore, getTodayDateString } from '../../store/useSkyDoStore';
 import { PixelBadge } from '../ui/PixelBadge';
 import { PixelButton } from '../ui/PixelButton';
 import { IconCoin, IconTrash, IconSparkle } from '../icons/PixelIcons';
@@ -24,9 +24,11 @@ export const MinionCard: React.FC<MinionCardProps> = ({ minion, onEdit }) => {
 
   const today = getTodayDateString();
   const isDoneToday = minion.completedDates.includes(today);
+  const daysUntilReady = getMinionDaysUntilReady(minion, today);
+  const isReadyToHarvest = isMinionReadyToHarvest(minion, today);
 
   const handleHarvest = () => {
-    if (!isDoneToday) {
+    if (isReadyToHarvest) {
       setHarvestBurst(true);
       setTimeout(() => setHarvestBurst(false), 1200);
     }
@@ -59,6 +61,8 @@ export const MinionCard: React.FC<MinionCardProps> = ({ minion, onEdit }) => {
   const heatmapDays = get28Days();
   const upgradeCost = minion.level * 50;
   const canUpgrade = coins >= upgradeCost;
+  const currentReward = getMinionHarvestReward(minion.level);
+  const nextReward = getMinionHarvestReward(minion.level + 1);
 
   // Resource Icon Colors
   const resourceColors: Record<MinionIcon, string> = {
@@ -119,13 +123,13 @@ export const MinionCard: React.FC<MinionCardProps> = ({ minion, onEdit }) => {
             {/* Bobbing head & body */}
             <div
               className={`relative flex flex-col items-center ${
-                reducedMotion ? '' : isDoneToday ? 'animate-bounce' : 'animate-pulse'
+                reducedMotion ? '' : !isReadyToHarvest ? 'animate-bounce' : 'animate-pulse'
               }`}
             >
               {/* Floating Harvest Pop Notification */}
               {harvestBurst && (
                 <div className="absolute -top-7 px-2 py-0.5 bg-[#E3B341] border border-[#99701A] text-[#2B2118] font-sans text-xs font-bold rounded-xs animate-bounce shadow-md">
-                  +{minion.level * 2} {minion.resourceName}!
+                  +{currentReward.resources} {minion.resourceName}!
                 </div>
               )}
 
@@ -198,12 +202,17 @@ export const MinionCard: React.FC<MinionCardProps> = ({ minion, onEdit }) => {
       {/* Footer Controls: Daily Check-in & Upgrade */}
       <div className="flex items-center gap-2 pt-2 border-t border-[#D5C7AF]">
         <PixelButton
-          variant={isDoneToday ? 'stone' : 'primary'}
+          variant={isReadyToHarvest ? 'primary' : 'stone'}
           size="md"
+          disabled={!isReadyToHarvest}
           onClick={handleHarvest}
           className="flex-1 text-xs font-sans font-bold"
         >
-          {isDoneToday ? '✓ Worked Today' : '⚡ Harvest Habit'}
+          {!isReadyToHarvest
+            ? minion.frequency === 'weekly' && !isDoneToday
+              ? `Available in ${daysUntilReady}d`
+              : minion.frequency === 'weekly' ? '✓ Worked This Week' : '✓ Worked Today'
+            : minion.frequency === 'weekly' ? '⚡ Harvest Weekly Habit' : '⚡ Harvest Habit'}
         </PixelButton>
 
         <PixelButton
@@ -221,6 +230,10 @@ export const MinionCard: React.FC<MinionCardProps> = ({ minion, onEdit }) => {
           </span>
         </PixelButton>
       </div>
+      <p className="mt-2 text-[11px] leading-4 text-[#6B5A49]">
+        Harvest: <strong>{currentReward.resources} {minion.resourceName}</strong> + <strong>{currentReward.coins} coins</strong>
+        {' · '}Next tier: <strong>{nextReward.resources} {minion.resourceName}</strong> + <strong>{nextReward.coins} coins</strong>
+      </p>
     </div>
   );
 };

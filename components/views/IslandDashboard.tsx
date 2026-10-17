@@ -21,17 +21,23 @@ export const IslandDashboard: React.FC = () => {
   const minions = useSkyDoStore((state) => state.minions);
   const setActiveTab = useSkyDoStore((state) => state.setActiveTab);
   const checkMinionToday = useSkyDoStore((state) => state.checkMinionToday);
+  const theme = useSkyDoStore((state) => state.theme);
 
   const [questToEdit, setQuestToEdit] = useState<Quest | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const today = getTodayDateString();
+  const overdueCount = quests.filter((q) => !q.completed && q.dueDate && q.dueDate < today).length;
+  const dueTodayCount = quests.filter((q) => !q.completed && q.dueDate === today).length;
 
   // Today's Top Quests (uncompleted, prioritized by rarity)
   const priorityWeight = { legendary: 5, epic: 4, rare: 3, uncommon: 2, common: 1 };
   const topQuests = quests
     .filter((q) => !q.completed && (!q.dueDate || q.dueDate <= today))
-    .sort((a, b) => priorityWeight[b.priority] - priorityWeight[a.priority])
+    .sort((a, b) => {
+      const overdueOrder = Number(Boolean(b.dueDate && b.dueDate < today)) - Number(Boolean(a.dueDate && a.dueDate < today));
+      return overdueOrder || priorityWeight[b.priority] - priorityWeight[a.priority];
+    })
     .slice(0, 4);
 
   return (
@@ -39,8 +45,26 @@ export const IslandDashboard: React.FC = () => {
       {/* Floating Island Hero with Growing Island & Drifting Clouds */}
       <FloatingIslandHero />
 
+      <section aria-label="Today's progress" className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+        <div data-light-surface="true" className="pixel-panel-parchment p-3 sm:p-4">
+          <div className="text-xs sm:text-sm font-semibold text-[#5A4D3F]">Due today</div>
+          <div className="font-number text-2xl font-bold text-[#2B2118] mt-1">{dueTodayCount}</div>
+          <div className="text-xs text-[#6B5A49]">objectives to tackle</div>
+        </div>
+        <div data-light-surface="true" className={`pixel-panel-parchment p-3 sm:p-4 ${overdueCount ? 'border-l-4 border-l-[#B3392F]' : ''}`}>
+          <div className="text-xs sm:text-sm font-semibold text-[#5A4D3F]">Overdue</div>
+          <div className={`font-number text-2xl font-bold mt-1 ${overdueCount ? 'text-[#9B2F27]' : 'text-[#2B2118]'}`}>{overdueCount}</div>
+          <div className="text-xs text-[#6B5A49]">{overdueCount ? 'ready to reschedule or finish' : 'you are all caught up'}</div>
+        </div>
+        <div data-light-surface="true" className="col-span-2 sm:col-span-1 pixel-panel-parchment p-3 sm:p-4">
+          <div className="text-xs sm:text-sm font-semibold text-[#5A4D3F]">Daily habits</div>
+          <div className="font-number text-2xl font-bold text-[#2B2118] mt-1">{minions.filter((m) => m.completedDates.includes(today)).length}<span className="text-base text-[#6B5A49]">/{minions.length}</span></div>
+          <div className="text-xs text-[#6B5A49]">minion plots harvested</div>
+        </div>
+      </section>
+
       {/* Quick Add Bar */}
-      <div className="pixel-panel-parchment p-4 border-2 border-[#D5C7AF]">
+      <div data-light-surface="true" className="pixel-panel-parchment p-4 border-2 border-[#D5C7AF]">
         <div className="flex items-center gap-2 mb-2 text-xs font-sans font-bold uppercase tracking-wider text-[#5A4D3F]">
           <IconSparkle size={14} />
           <span>PLANT A NEW OBJECTIVE:</span>
@@ -53,9 +77,9 @@ export const IslandDashboard: React.FC = () => {
         {/* Left Column: Today's Priority Quests */}
         <div className="lg:col-span-7 space-y-4">
           <div className="flex items-center justify-between">
-            <h3 className="font-pixel text-lg text-[#2B2118] font-bold flex items-center gap-2">
+            <h3 className={`font-pixel text-lg ${theme === 'galaxy' ? 'text-[#F4EAFE]' : 'text-[#2B2118]'} font-bold flex items-center gap-2`}>
               <IconQuest size={18} />
-              Today's Key Objectives
+              Today&apos;s Focus & Overdue
             </h3>
             <PixelButton
               variant="ghost"
@@ -71,7 +95,7 @@ export const IslandDashboard: React.FC = () => {
             {topQuests.length === 0 ? (
               <div className="pixel-panel-parchment p-8 text-center border border-[#D5C7AF]">
                 <p className="text-xs font-sans text-[#5A4D3F] mb-3">
-                  All today's objectives cleared! Your sanctuary is at peace.
+                  All today&apos;s objectives cleared! Your sanctuary is at peace.
                 </p>
                 <PixelButton
                   variant="primary"

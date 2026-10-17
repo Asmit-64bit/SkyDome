@@ -1,4 +1,4 @@
-# SkyDo 🏝️ — Skyblock Productivity Island
+# SkyDome 🏝️ — Skyblock Productivity Island
 
 A polished, production-quality productivity web application fusing the tactile charm and progression loops of **Minecraft Skyblock** with a clean, calm, and distraction-free productivity system.
 
@@ -26,7 +26,7 @@ npm start
 
 ## 🎨 Visual Direction & Design System
 
-SkyDo adheres strictly to an authentic, retro-crafted indie game menu aesthetic balanced with high readability:
+SkyDome adheres strictly to an authentic, retro-crafted indie game menu aesthetic balanced with high readability:
 
 - **Earthy Muted Palette (CSS Tokens):**
   - **Sky:** `#8EC9F0` (zenith) fading to `#DDF1FB` (horizon)
@@ -51,17 +51,16 @@ SkyDo adheres strictly to an authentic, retro-crafted indie game menu aesthetic 
 
 ## 🛠️ Core Feature Architecture
 
-SkyDo maps everyday productivity habits to Skyblock game loops:
+SkyDome maps everyday productivity habits to Skyblock game loops:
 
 ### 1. 🏝️ Island Hub (Dashboard) & 3D Voxel World
 - **Interactive 3D Voxel Island (Three.js):** A full 3D voxel floating island with 360° mouse & touch orbit rotation, realistic PCF shadow mapping, and dynamic atmosphere lighting responsive to current sky themes (Day, Sunset, Cloudy, Night).
 - **Toggleable 3D / 2D Modes:** Switch between real-time 3D voxel graphics and classic crisp 2D pixel art anytime.
-- **Visual Island Growth in 3D:** As your island level advances, new 3D voxel elements spawn on your island:
+- **Visual Island Growth in 3D:** Earn a free starter island and unlock Bazaar offers as your island level advances:
   - *Level 1:* 3D Campfire with animated point lighting and flickering flame particles.
-  - *Level 2:* Volumetric 3D Oak Tree with wooden trunk and leafy canopy.
+  - *Bazaar purchase:* Volumetric 3D Oak Tree with wooden trunk and leafy canopy (available at island level 2).
   - *Level 3:* 3D Wooden Storage Chest with gold latch.
-  - *Level 4:* Cozy 3D Timber Cabin with pitched roof, window, and cobblestone chimney.
-  - *Level 5+:* Cascading 3D Waterfall plunging off the cliff edge, rotating Windmill blades, and companion bouncing Slime!
+  - *Bazaar purchase:* Cozy 3D Timber Cabin (available at level 3), Cascading Waterfall (level 5), and companion Slime (level 7).
 - **Daily Streak Campfire:** Animated campfire flame tracking consecutive productive days.
 - **Quick-Add Bar:** Natural language input right on the dashboard.
 
@@ -70,7 +69,7 @@ SkyDo maps everyday productivity habits to Skyblock game loops:
 - **Subtask Checklists:** Direct inline check-off and creation of subtasks.
 - **Views:** *Today*, *Upcoming*, *All*, *Completed*.
 - **Drag & Reorder:** Up/down ordering controls.
-- **Natural Language Parsing:** Type `"Deploy release tomorrow 5pm !epic #work"` and SkyDo automatically schedules the date, time, priority, and hashtags.
+- **Natural Language Parsing:** Type `"Deploy release tomorrow 5pm !epic #work"` and SkyDome automatically schedules the date, time, priority, and hashtags.
 - **Celebration:** Slaying a quest triggers a pixel particle burst, XP popup, and sound.
 - **Undo Toast:** Toast notification with an active countdown timer allows instant undo.
 
@@ -104,7 +103,7 @@ SkyDo maps everyday productivity habits to Skyblock game loops:
 
 ### 7. 🎁 Treasure Vault & Bazaar (Chest & Shop)
 - **Daily Bounty Crate:** Open the wooden treasure chest with an authentic lid-creaking animation to harvest random coin and XP drops.
-- **Bazaar Catalog:** Spend earned productivity coins on architectural island cosmetics (*Campfire*, *Oak Tree*, *Cozy Cabin*, *Windmill*, *Waterfall*, *Pet Slime*) and Sky Themes.
+- **Bazaar Catalog:** Spend earned productivity coins on island cosmetics including the *Farm Patch*, *Cherry Blossom Tree*, *Sky Crystal Cluster*, and *Sky Lantern Walk*, alongside the *Campfire*, *Oak Tree*, *Cozy Cabin*, *Waterfall*, and pets such as the *Cube Slime*, *Cloud Chick*, *Mossback Turtle*, *Ember Fox*, *Frost Wolf*, and *Moonshadow Cat*.
 
 ### 8. 📅 Almanac (Calendar)
 - **Month & Week Views:** Quests with scheduled due dates appear as compact colored blocks.
@@ -126,7 +125,7 @@ SkyDo maps everyday productivity habits to Skyblock game loops:
 ├── app/
 │   ├── globals.css          # Skyblock CSS tokens, bevels, buttons, animations
 │   ├── layout.tsx           # Pixelify Sans & Inter Google Font loading
-│   └── page.tsx             # Server page wrapping SkyDoApp in Suspense
+│   └── page.tsx             # Server page wrapping SkyDomeApp in Suspense
 ├── components/
 │   ├── icons/
 │   │   └── PixelIcons.tsx   # Original pixel-art SVG sprites
@@ -162,16 +161,16 @@ SkyDo maps everyday productivity habits to Skyblock game loops:
 │   │   ├── QuestsView.tsx
 │   │   ├── SettingsView.tsx
 │   │   └── SkillsView.tsx
-│   └── SkyDoApp.tsx         # Client root coordinator
+│   └── SkyDomeApp.tsx         # Client root coordinator
 ├── lib/
 │   ├── dateParser.ts        # Natural language date/time parser
 │   ├── sound.ts             # Web Audio API 8-bit procedural sound synth
 │   └── types.ts             # TypeScript models & types
 └── store/
-    └── useSkyDoStore.ts     # Zustand store with persistence & seed data
+    └── useSkyDomeStore.ts     # Zustand store with persistence & seed data
 ```
 
 ---
 
 ## 📜 License & Originality Notice
-SkyDo is an original productivity web application. All sprites, icons, and themes are custom SVG creations designed to capture the cozy feel of voxel skyblock adventures without utilizing any proprietary Minecraft or Hypixel assets, trademarks, or textures.
+SkyDome is an original productivity web application. All sprites, icons, and themes are custom SVG creations designed to capture the cozy feel of voxel skyblock adventures without utilizing any proprietary Minecraft or Hypixel assets, trademarks, or textures.

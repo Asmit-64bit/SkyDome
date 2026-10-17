@@ -251,7 +251,7 @@ export const CalendarView: React.FC = () => {
                   No quests due on this date.
                   <br />
                   <span className="text-[11px] text-[#5A4D3F]">
-                    Click "+ Add Due Quest" to schedule one.
+                    Click &quot;+ Add Due Quest&quot; to schedule one.
                   </span>
                 </div>
               ) : (

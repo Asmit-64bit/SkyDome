@@ -1,12 +1,11 @@
 'use client';
 
 import React, { useState } from 'react';
-import { useSkyDoStore, getTodayDateString } from '../../store/useSkyDoStore';
+import { isMinionReadyToHarvest, useSkyDoStore, getTodayDateString } from '../../store/useSkyDoStore';
 import confetti from 'canvas-confetti';
 import { Minion } from '../../lib/types';
 import { MinionCard } from '../minions/MinionCard';
 import { MinionModal } from '../minions/MinionModal';
-import { PixelPanel } from '../ui/PixelPanel';
 import { PixelButton } from '../ui/PixelButton';
 import {
   IconMinion,
@@ -17,6 +16,9 @@ import {
 export const MinionsView: React.FC = () => {
   const minions = useSkyDoStore((state) => state.minions);
   const harvestAllMinions = useSkyDoStore((state) => state.harvestAllMinions);
+  const harvestFarm = useSkyDoStore((state) => state.harvestFarm);
+  const shopItems = useSkyDoStore((state) => state.shopItems);
+  const farmLastHarvestDate = useSkyDoStore((state) => state.farmLastHarvestDate);
   const setUndoToast = useSkyDoStore((state) => state.setUndoToast);
   const reducedMotion = useSkyDoStore((state) => state.reducedMotion);
 
@@ -24,8 +26,11 @@ export const MinionsView: React.FC = () => {
   const [minionToEdit, setMinionToEdit] = useState<Minion | null>(null);
 
   const today = getTodayDateString();
-  const completedTodayCount = minions.filter((m) => m.completedDates.includes(today)).length;
+  const activeFarm = shopItems.find((item) => item.category === 'farm' && item.owned && item.equipped);
+  const farmHarvestedToday = farmLastHarvestDate === today;
   const totalMinions = minions.length;
+  const readyMinionCount = minions.filter((minion) => isMinionReadyToHarvest(minion, today)).length;
+  const completedDueCount = totalMinions - readyMinionCount;
 
   const handleEdit = (minion: Minion) => {
     setMinionToEdit(minion);
@@ -53,12 +58,24 @@ export const MinionsView: React.FC = () => {
       }
       setUndoToast({
         id: `harvest_${Date.now()}`,
-        type: 'quest_complete',
+        type: 'notice',
         title: `Harvested ${res.count} minions (+${res.totalCoins} Coins, +${res.totalXp} XP)`,
         data: {},
         timestamp: Date.now(),
       });
     }
+  };
+
+  const handleFarmHarvest = () => {
+    const result = harvestFarm();
+    if (!result) return;
+    setUndoToast({
+      id: `farm_harvest_${Date.now()}`,
+      type: 'notice',
+      title: `Sold ${result.crop} harvest (+${result.coins} Coins)`,
+      data: {},
+      timestamp: Date.now(),
+    });
   };
 
   return (
@@ -76,24 +93,36 @@ export const MinionsView: React.FC = () => {
         </div>
 
         <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+          {activeFarm?.farmIncome && (
+            <PixelButton
+              variant={farmHarvestedToday ? 'stone' : 'wood'}
+              size="md"
+              disabled={farmHarvestedToday}
+              onClick={handleFarmHarvest}
+              className="shrink-0 text-xs"
+              title="Collect your farm's daily coin income"
+            >
+              {farmHarvestedToday ? '✓ Farm Sold Today' : `🌾 Sell ${activeFarm.farmCrop} (+${activeFarm.farmIncome} Coins)`}
+            </PixelButton>
+          )}
           <div className="pixel-slot p-2.5 px-3 flex items-center gap-2">
             <IconSparkle size={18} />
             <div>
               <div className="text-[10px] text-[#C7C9CC] font-sans font-bold uppercase tracking-wider">HARVEST STATUS</div>
               <div className="text-xs font-sans font-bold text-[#E3B341]">
-                <span className="font-number">{completedTodayCount}</span> / <span className="font-number">{totalMinions}</span> Worked Today
+                <span className="font-number">{completedDueCount}</span> / <span className="font-number">{totalMinions}</span> Worked This Cycle
               </div>
             </div>
           </div>
 
-          {completedTodayCount < totalMinions && (
+          {readyMinionCount > 0 && (
             <PixelButton
               variant="wood"
               size="md"
               onClick={handleHarvestAll}
               className="flex items-center gap-1.5 shrink-0 text-xs"
             >
-              <span>⚡ Harvest All ({totalMinions - completedTodayCount})</span>
+              <span>⚡ Harvest All ({readyMinionCount})</span>
             </PixelButton>
           )}
 

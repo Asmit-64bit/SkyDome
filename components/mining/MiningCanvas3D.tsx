@@ -20,6 +20,7 @@ export const MiningCanvas3D: React.FC<MiningCanvas3DProps> = ({
   onBlockClick,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
+  const suppressClickRef = useRef(false);
   const reducedMotion = useSkyDoStore((state) => state.reducedMotion);
 
   useEffect(() => {
@@ -124,10 +125,12 @@ export const MiningCanvas3D: React.FC<MiningCanvas3DProps> = ({
     const onMouseUp = (e: MouseEvent) => {
       if (isDragging) {
         const dist = Math.hypot(e.clientX - startMouseX, e.clientY - startMouseY);
-        if (dist < 6 && onBlockClick) {
+        if (dist < 6) {
           punchScale = 0.88;
           pickaxeGroup.rotation.z -= 0.6;
-          onBlockClick();
+        } else if (dist >= 6) {
+          suppressClickRef.current = true;
+          window.setTimeout(() => { suppressClickRef.current = false; }, 0);
         }
       }
       isDragging = false;
@@ -207,7 +210,10 @@ export const MiningCanvas3D: React.FC<MiningCanvas3DProps> = ({
   return (
     <div
       ref={containerRef}
-      onClick={onBlockClick}
+      onClick={() => {
+        if (suppressClickRef.current) return;
+        onBlockClick?.();
+      }}
       className="w-full h-full min-h-[220px] sm:min-h-[240px] flex items-center justify-center cursor-grab active:cursor-grabbing select-none"
     />
   );

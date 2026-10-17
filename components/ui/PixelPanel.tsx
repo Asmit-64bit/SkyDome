@@ -26,7 +26,11 @@ export const PixelPanel: React.FC<PixelPanelProps> = ({
   };
 
   return (
-    <div className={`p-4 ${panelStyles[variant]} ${className}`} {...props}>
+    <div
+      data-light-surface={variant === 'parchment' || variant === 'slot-light' ? 'true' : undefined}
+      className={`p-4 ${panelStyles[variant]} ${className}`}
+      {...props}
+    >
       {(title || actions || icon) && (
         <div className="flex items-center justify-between pb-3 mb-3 border-b border-black/10 dark:border-white/10">
           <div className="flex items-center gap-2">

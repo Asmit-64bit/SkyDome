@@ -5,16 +5,23 @@ import { useSkyDoStore } from '../../store/useSkyDoStore';
 import { IconCampfire, IconCoin, IconSparkle } from '../icons/PixelIcons';
 import { PixelProgress } from '../ui/PixelProgress';
 import { IslandCanvas3D } from './IslandCanvas3D';
+import { getTodayDateString } from '../../store/useSkyDoStore';
 
 export const FloatingIslandHero: React.FC = () => {
   const islandName = useSkyDoStore((state) => state.islandName);
   const islandTitle = useSkyDoStore((state) => state.islandTitle);
   const islandLevel = useSkyDoStore((state) => state.islandLevel);
   const dailyXp = useSkyDoStore((state) => state.dailyXp);
+  const dailyXpDate = useSkyDoStore((state) => state.dailyXpDate);
   const dailyXpGoal = useSkyDoStore((state) => state.dailyXpGoal);
   const coins = useSkyDoStore((state) => state.coins);
   const streak = useSkyDoStore((state) => state.streak);
+  const theme = useSkyDoStore((state) => state.theme);
   const reducedMotion = useSkyDoStore((state) => state.reducedMotion);
+  const darkSky = theme === 'night' || theme === 'galaxy';
+  const currentDailyXp = dailyXpDate === getTodayDateString() ? dailyXp : 0;
+  const heroTitleColor = darkSky ? 'text-[#FFF8EC]' : 'text-[#2B2118]';
+  const heroSubtitleColor = darkSky ? 'text-[#E4D7C2]' : 'text-[#5A4D3F]';
 
   // Greeting
   const getGreeting = () => {
@@ -32,12 +39,12 @@ export const FloatingIslandHero: React.FC = () => {
   }).format(new Date());
 
   return (
-    <div className="relative overflow-hidden pixel-panel-parchment p-5 sm:p-7 mb-6 border-b-4 border-[#C8B896]">
-      {/* Sky Background with Pixel Clouds */}
-      <div className="absolute inset-0 bg-gradient-to-b from-[var(--color-sky-top)] to-[var(--color-sky-bottom)] opacity-90 pointer-events-none" />
+    <div className={`relative overflow-hidden ${theme === 'galaxy' ? 'galaxy-hero-panel' : 'pixel-panel-parchment'} p-5 sm:p-7 mb-6 border-b-4 ${theme === 'galaxy' ? 'border-[#9D78C5]' : 'border-[#C8B896]'}`}>
+      {/* Keep the normal sky behind the content; Galaxy owns the panel background directly. */}
+      {theme !== 'galaxy' && <div className="absolute inset-0 bg-gradient-to-b from-[var(--color-sky-top)] to-[var(--color-sky-bottom)] opacity-90 pointer-events-none" />}
 
       {/* Drifting Clouds */}
-      <div
+      {theme !== 'galaxy' && <div
         className={`absolute top-4 left-[-15%] w-36 h-10 pointer-events-none opacity-70 ${
           reducedMotion ? '' : 'animate-[cloudDriftSlow_45s_linear_infinite]'
         }`}
@@ -47,9 +54,9 @@ export const FloatingIslandHero: React.FC = () => {
           <rect x="24" y="0" width="24" height="6" />
           <rect x="0" y="8" width="72" height="8" />
         </svg>
-      </div>
+      </div>}
 
-      <div
+      {theme !== 'galaxy' && <div
         className={`absolute top-16 left-[-20%] w-48 h-12 pointer-events-none opacity-60 ${
           reducedMotion ? '' : 'animate-[cloudDriftFast_32s_linear_infinite_10s]'
         }`}
@@ -59,7 +66,7 @@ export const FloatingIslandHero: React.FC = () => {
           <rect x="32" y="2" width="32" height="8" />
           <rect x="0" y="10" width="96" height="10" />
         </svg>
-      </div>
+      </div>}
 
       {/* Main Grid: Left Greeting & Stats, Right Floating 3D Island */}
       <div className="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
@@ -79,26 +86,26 @@ export const FloatingIslandHero: React.FC = () => {
             </div>
           </div>
 
-          <h1 className="font-pixel text-2xl sm:text-3xl text-[#2B2118] font-bold tracking-tight mb-1">
+          <h1 className={`font-pixel text-2xl sm:text-3xl ${heroTitleColor} font-bold tracking-tight mb-1`}>
             {getGreeting()}, {islandName}!
           </h1>
-          <p className="text-sm font-sans text-[#5A4D3F] mb-4">
+          <p className={`text-sm font-sans ${heroSubtitleColor} mb-4`}>
             {islandTitle} • Level <span className="font-number font-bold">{islandLevel}</span> Skyblock Sanctuary
           </p>
 
           {/* Daily XP bar */}
-          <div className="max-w-md bg-[#FAF6ED]/95 p-3 border-2 border-[#C8B896] shadow-xs rounded-xs">
+          <div data-light-surface="true" className="max-w-md bg-[#FAF6ED]/95 p-3 border-2 border-[#C8B896] shadow-xs rounded-xs">
             <div className="flex items-center justify-between text-xs font-sans mb-1 text-[#2B2118]">
               <span className="flex items-center gap-1.5 font-bold uppercase tracking-wider">
                 <IconSparkle size={14} />
-                TODAY'S HARVEST XP
+                TODAY&apos;S HARVEST XP
               </span>
               <span className="font-bold">
-                <span className="font-number font-bold">{dailyXp}</span> / <span className="font-number font-bold">{dailyXpGoal}</span> XP
+                <span className="font-number font-bold">{currentDailyXp}</span> / <span className="font-number font-bold">{dailyXpGoal}</span> XP
               </span>
             </div>
             <PixelProgress
-              value={dailyXp}
+              value={currentDailyXp}
               max={dailyXpGoal}
               variant="xp"
               showLabel={false}
@@ -107,7 +114,7 @@ export const FloatingIslandHero: React.FC = () => {
             <div className="flex items-center justify-between text-[11px] font-sans text-[#6B5A49] mt-1.5">
               <span>Next Island Upgrade: Level <span className="font-number font-bold">{islandLevel + 1}</span></span>
               <span className="font-semibold text-[#326122]">
-                <span className="font-number font-bold">{Math.max(0, dailyXpGoal - dailyXp)}</span> XP to daily goal
+                <span className="font-number font-bold">{Math.max(0, dailyXpGoal - currentDailyXp)}</span> XP to daily goal
               </span>
             </div>
           </div>

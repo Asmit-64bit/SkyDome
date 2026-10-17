@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { useSkyDoStore } from '../../store/useSkyDoStore';
+import { IslandTheme } from '../../lib/types';
 import { PixelModal } from '../ui/PixelModal';
 import { PixelButton } from '../ui/PixelButton';
 import { IconIsland, IconSparkle, IconQuest } from '../icons/PixelIcons';
@@ -55,7 +56,7 @@ export const OnboardingModal: React.FC = () => {
                 Name Your Skyblock Island
               </h3>
               <p className="text-xs text-[#5A4D3F] mt-1">
-                Your island floats high in the sky. As you harvest daily habits and slay quests, your sanctuary grows with trees, cabins, and waterfalls.
+                Your island floats high in the sky. Level up to unlock new Bazaar offers, then spend coins to purchase and place trees, cabins, and waterfalls.
               </p>
             </div>
 
@@ -67,7 +68,7 @@ export const OnboardingModal: React.FC = () => {
                 type="text"
                 value={islandName}
                 onChange={(e) => setIslandName(e.target.value)}
-                placeholder="e.g. Aether Peak, SkyDo Haven"
+                placeholder="e.g. Aether Peak, SkyDome Haven"
                 className="w-full pixel-input text-sm text-[#2B2118]"
               />
             </div>
@@ -92,16 +93,16 @@ export const OnboardingModal: React.FC = () => {
             </div>
 
             <div className="grid grid-cols-2 gap-2.5">
-              {[
+              {([
                 { id: 'day', label: 'Daytime Azure', bg: '#8EC9F0' },
                 { id: 'sunset', label: 'Amber Sunset', bg: '#D87B40' },
                 { id: 'cloudy', label: 'Overcast Slate', bg: '#8E9CA8' },
                 { id: 'night', label: 'Midnight Sky', bg: '#1B2939' },
-              ].map((th) => (
+              ] satisfies { id: IslandTheme; label: string; bg: string }[]).map((th) => (
                 <button
                   key={th.id}
                   type="button"
-                  onClick={() => setTheme(th.id as any)}
+                  onClick={() => setTheme(th.id)}
                   className={`p-3 text-left border-2 rounded-xs transition-all cursor-pointer ${
                     theme === th.id
                       ? 'bg-white border-[#E3B341] ring-2 ring-[#E3B341]'

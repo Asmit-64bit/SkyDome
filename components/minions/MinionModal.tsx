@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Minion, MinionCategory, MinionIcon } from '../../lib/types';
 import { useSkyDoStore } from '../../store/useSkyDoStore';
 import { PixelModal } from '../ui/PixelModal';
@@ -13,7 +13,7 @@ export interface MinionModalProps {
   minionToEdit?: Minion | null;
 }
 
-export const MinionModal: React.FC<MinionModalProps> = ({
+const MinionModalForm: React.FC<MinionModalProps> = ({
   isOpen,
   onClose,
   minionToEdit,
@@ -21,30 +21,12 @@ export const MinionModal: React.FC<MinionModalProps> = ({
   const addMinion = useSkyDoStore((state) => state.addMinion);
   const editMinion = useSkyDoStore((state) => state.editMinion);
 
-  const [name, setName] = useState('');
-  const [habit, setHabit] = useState('');
-  const [category, setCategory] = useState<MinionCategory>('farming');
-  const [resourceName, setResourceName] = useState('Wheat');
-  const [iconType, setIconType] = useState<MinionIcon>('wheat');
-  const [frequency, setFrequency] = useState<'daily' | 'weekly'>('daily');
-
-  useEffect(() => {
-    if (minionToEdit) {
-      setName(minionToEdit.name);
-      setHabit(minionToEdit.habit);
-      setCategory(minionToEdit.category);
-      setResourceName(minionToEdit.resourceName);
-      setIconType(minionToEdit.iconType);
-      setFrequency(minionToEdit.frequency);
-    } else {
-      setName('');
-      setHabit('');
-      setCategory('farming');
-      setResourceName('Golden Crop');
-      setIconType('wheat');
-      setFrequency('daily');
-    }
-  }, [minionToEdit, isOpen]);
+  const [name, setName] = useState(minionToEdit?.name ?? '');
+  const [habit, setHabit] = useState(minionToEdit?.habit ?? '');
+  const [category, setCategory] = useState<MinionCategory>(minionToEdit?.category ?? 'farming');
+  const [resourceName, setResourceName] = useState(minionToEdit?.resourceName ?? 'Golden Crop');
+  const [iconType, setIconType] = useState<MinionIcon>(minionToEdit?.iconType ?? 'wheat');
+  const [frequency, setFrequency] = useState<'daily' | 'weekly'>(minionToEdit?.frequency ?? 'daily');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -191,4 +173,9 @@ export const MinionModal: React.FC<MinionModalProps> = ({
       </form>
     </PixelModal>
   );
+};
+
+export const MinionModal: React.FC<MinionModalProps> = (props) => {
+  if (!props.isOpen) return null;
+  return <MinionModalForm key={props.minionToEdit?.id ?? 'new-minion'} {...props} />;
 };

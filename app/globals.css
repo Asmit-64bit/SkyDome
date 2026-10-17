@@ -40,8 +40,101 @@
 }
 
 [data-theme="night"] {
-  --color-sky-top: #1B2939;
-  --color-sky-bottom: #354B62;
+  --color-sky-top: #101923;
+  --color-sky-bottom: #1C2A3A;
+}
+
+[data-theme="galaxy"] {
+  --color-sky-top: #180d2a;
+  --color-sky-bottom: #39205c;
+}
+
+.galaxy-sky-background {
+  background-color: #140b24;
+  background-image:
+    radial-gradient(circle at 4% 12%, #fff 0 1px, transparent 1.8px),
+    radial-gradient(circle at 13% 71%, #dec7ff 0 1.2px, transparent 2px),
+    radial-gradient(circle at 21% 29%, #fff 0 0.8px, transparent 1.6px),
+    radial-gradient(circle at 29% 88%, #caa9ff 0 1px, transparent 1.8px),
+    radial-gradient(circle at 37% 13%, #fff 0 1.3px, transparent 2.2px),
+    radial-gradient(circle at 45% 56%, #dfcaff 0 0.9px, transparent 1.8px),
+    radial-gradient(circle at 53% 23%, #fff 0 0.8px, transparent 1.6px),
+    radial-gradient(circle at 61% 81%, #caa9ff 0 1.2px, transparent 2px),
+    radial-gradient(circle at 69% 42%, #fff 0 1px, transparent 1.8px),
+    radial-gradient(circle at 76% 9%, #dfcaff 0 0.8px, transparent 1.6px),
+    radial-gradient(circle at 84% 68%, #fff 0 1.2px, transparent 2px),
+    radial-gradient(circle at 93% 33%, #caa9ff 0 1px, transparent 1.8px),
+    radial-gradient(ellipse 48% 38% at 78% 20%, rgba(179, 85, 224, 0.32), transparent 100%),
+    radial-gradient(ellipse 40% 46% at 22% 78%, rgba(69, 104, 216, 0.24), transparent 100%),
+    radial-gradient(ellipse 24% 36% at 55% 54%, rgba(105, 51, 158, 0.2), transparent 100%),
+    linear-gradient(180deg, #140b24 0%, #24103d 50%, #32184f 100%);
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+}
+
+.galaxy-hero-panel {
+  background-color: #170b2a;
+  background-image:
+    radial-gradient(circle at 5% 18%, #fff 0 1.2px, transparent 2px),
+    radial-gradient(circle at 12% 76%, #dec7ff 0 1.4px, transparent 2.2px),
+    radial-gradient(circle at 20% 39%, #fff 0 0.9px, transparent 1.7px),
+    radial-gradient(circle at 28% 11%, #caa9ff 0 1px, transparent 1.8px),
+    radial-gradient(circle at 36% 66%, #fff 0 1.3px, transparent 2.1px),
+    radial-gradient(circle at 44% 25%, #dfcaff 0 0.9px, transparent 1.7px),
+    radial-gradient(circle at 52% 84%, #fff 0 1.1px, transparent 1.9px),
+    radial-gradient(circle at 60% 48%, #caa9ff 0 1.4px, transparent 2.2px),
+    radial-gradient(circle at 68% 13%, #fff 0 0.9px, transparent 1.7px),
+    radial-gradient(circle at 76% 73%, #dfcaff 0 1.2px, transparent 2px),
+    radial-gradient(circle at 84% 34%, #fff 0 1.4px, transparent 2.2px),
+    radial-gradient(circle at 94% 57%, #caa9ff 0 1px, transparent 1.8px),
+    radial-gradient(ellipse 46% 60% at 76% 32%, rgba(196, 89, 228, 0.38), transparent 100%),
+    radial-gradient(ellipse 48% 42% at 25% 82%, rgba(72, 111, 222, 0.28), transparent 100%),
+    radial-gradient(ellipse 28% 38% at 52% 48%, rgba(117, 53, 178, 0.2), transparent 100%),
+    linear-gradient(135deg, #170b2a 0%, #291244 54%, #3b1c5d 100%);
+  background-repeat: no-repeat;
+  border-color: #9d78c5;
+  box-shadow: 0 0 34px rgba(142, 78, 196, 0.26), 2px 2px 0 rgba(10, 5, 20, 0.35);
+}
+
+/* Keep text legible over Night and Galaxy backdrops, while preserving ink on light surfaces. */
+.dark-theme-text {
+  color: #f4efe6 !important;
+}
+
+.dark-theme-text :where([class*="text-[#2B2118]"]) {
+  color: #f4efe6 !important;
+}
+
+.dark-theme-text :where([class*="text-[#5A4D3F]"], [class*="text-[#6B5A49]"], [class*="text-[#695B4E]"]) {
+  color: #ded3e8 !important;
+}
+
+/* Light cards and controls opt back into their dark ink and muted brown palette. */
+.dark-theme-text .pixel-panel-parchment,
+.dark-theme-text .pixel-slot-light,
+.dark-theme-text :is([class*="bg-[#FAF6ED]"], [class*="bg-white"], [class*="bg-[#F8F4EA]"], [class*="bg-[#F3EAD7]"], [class*="bg-[#EAE0CA]"], [class*="bg-[#E3B341]"], [class*="bg-[#E5B23C]"]) {
+  color: #2b2118 !important;
+}
+
+.dark-theme-text :is(.pixel-panel-parchment, .pixel-slot-light, [class*="bg-[#FAF6ED]"], [class*="bg-white"], [class*="bg-[#F8F4EA]"], [class*="bg-[#F3EAD7]"], [class*="bg-[#EAE0CA]"], [class*="bg-[#E3B341]"], [class*="bg-[#E5B23C]"]) :where([class*="text-[#2B2118]"]) {
+  color: #2b2118 !important;
+}
+
+.dark-theme-text :is(.pixel-panel-parchment, .pixel-slot-light, [class*="bg-[#FAF6ED]"], [class*="bg-white"], [class*="bg-[#F8F4EA]"], [class*="bg-[#F3EAD7]"], [class*="bg-[#EAE0CA]"]) :where([class*="text-[#5A4D3F]"], [class*="text-[#6B5A49]"], [class*="text-[#695B4E]"]) {
+  color: #5a4d3f !important;
+}
+
+/* Explicit light surfaces use a data marker so their text always wins over theme ink. */
+.dark-theme-text [data-light-surface="true"] {
+  color: #2b2118 !important;
+}
+
+.dark-theme-text [data-light-surface="true"] :where([class*="text-[#2B2118]"]) {
+  color: #2b2118 !important;
+}
+
+.dark-theme-text [data-light-surface="true"] :where([class*="text-[#5A4D3F]"], [class*="text-[#6B5A49]"], [class*="text-[#695B4E]"]) {
+  color: #5a4d3f !important;
 }
 
 /* Number typography overrides - Default to ultra-readable monospaced digits (JetBrains Mono) */

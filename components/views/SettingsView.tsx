@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { useSkyDoStore } from '../../store/useSkyDoStore';
+import { IslandTheme } from '../../lib/types';
 import { PixelPanel } from '../ui/PixelPanel';
 import { PixelButton } from '../ui/PixelButton';
 import { IconSettings, IconSound } from '../icons/PixelIcons';
@@ -10,6 +11,7 @@ export const SettingsView: React.FC = () => {
   const islandName = useSkyDoStore((state) => state.islandName);
   const islandTitle = useSkyDoStore((state) => state.islandTitle);
   const theme = useSkyDoStore((state) => state.theme);
+  const shopItems = useSkyDoStore((state) => state.shopItems);
   const numberFont = useSkyDoStore((state) => state.numberFont);
   const soundEnabled = useSkyDoStore((state) => state.soundEnabled);
   const soundVolume = useSkyDoStore((state) => state.soundVolume);
@@ -28,6 +30,10 @@ export const SettingsView: React.FC = () => {
   const importDataJson = useSkyDoStore((state) => state.importDataJson);
   const resetAllData = useSkyDoStore((state) => state.resetAllData);
 
+  const canUseTheme = (themeId: string) => themeId === 'day' || Boolean(
+    shopItems.find((item) => item.id === `theme_${themeId}`)?.owned
+  );
+
   const [importText, setImportText] = useState('');
   const [importStatus, setImportStatus] = useState<string | null>(null);
   const [resetConfirm, setResetConfirm] = useState(false);
@@ -39,7 +45,7 @@ export const SettingsView: React.FC = () => {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `skydo_island_backup_${new Date().toISOString().split('T')[0]}.json`;
+    a.download = `SkyDome_island_backup_${new Date().toISOString().split('T')[0]}.json`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -101,9 +107,9 @@ export const SettingsView: React.FC = () => {
       </PixelPanel>
 
       {/* Atmospheric Theme Variants */}
-      <PixelPanel variant="parchment" title="Atmospheric Sky Theme (No Neon / No Purple)">
+      <PixelPanel variant="parchment" title="Atmospheric Sky Theme">
         <p className="text-xs text-[#5A4D3F] mb-3">
-          Select natural daytime and twilight palettes.
+          Choose a daytime, twilight, or cosmic sky atmosphere for your sanctuary.
         </p>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {[
@@ -111,12 +117,16 @@ export const SettingsView: React.FC = () => {
             { id: 'sunset', label: 'Amber Sunset', desc: 'Warm dusk glow', bg: '#D87B40' },
             { id: 'cloudy', label: 'Overcast Slate', desc: 'Calm slate grey', bg: '#8E9CA8' },
             { id: 'night', label: 'Starry Midnight', desc: 'Deep navy celestial', bg: '#1B2939' },
+            { id: 'galaxy', label: 'Galaxy Space', desc: 'Violet nebula and starfield', bg: '#29133F' },
           ].map((th) => (
             <button
               key={th.id}
               type="button"
-              onClick={() => setTheme(th.id as any)}
-              className={`p-3 text-left border-2 rounded-xs transition-all cursor-pointer ${
+              disabled={!canUseTheme(th.id)}
+              onClick={() => setTheme(th.id as IslandTheme)}
+              className={`p-3 text-left border-2 rounded-xs transition-all ${
+                !canUseTheme(th.id) ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'
+              } ${
                 theme === th.id
                   ? 'bg-white border-[#E3B341] shadow-xs ring-2 ring-[#E3B341]'
                   : 'bg-[#FAF6ED] border-[#D5C7AF] hover:bg-[#F3EAD7]'
@@ -124,12 +134,21 @@ export const SettingsView: React.FC = () => {
             >
               <div
                 className="w-full h-8 mb-2 rounded-xs border border-black/10"
-                style={{ backgroundColor: th.bg }}
+                style={{
+                  backgroundColor: th.bg,
+                  ...(th.id === 'galaxy' ? {
+                    backgroundImage: 'radial-gradient(white 1px, transparent 1.4px), radial-gradient(#c9a6ff 1px, transparent 1.4px)',
+                    backgroundSize: '17px 17px, 25px 25px',
+                    backgroundPosition: '3px 4px, 11px 14px',
+                  } : {}),
+                }}
               />
               <div className="font-sans text-xs font-bold text-[#2B2118]">
                 {th.label}
               </div>
-              <div className="text-[10px] text-[#6B5A49]">{th.desc}</div>
+              <div className="text-[10px] text-[#6B5A49]">
+                {canUseTheme(th.id) ? th.desc : 'Purchase from the Bazaar to unlock'}
+              </div>
             </button>
           ))}
         </div>
@@ -174,7 +193,7 @@ export const SettingsView: React.FC = () => {
             <button
               key={f.id}
               type="button"
-              onClick={() => setNumberFont(f.id as any)}
+              onClick={() => setNumberFont(f.id as 'tabular' | 'clean' | 'silkscreen' | 'pixel')}
               className={`p-3 text-left border-2 rounded-xs transition-all cursor-pointer ${
                 numberFont === f.id
                   ? 'bg-white border-[#E3B341] shadow-xs ring-2 ring-[#E3B341]'
@@ -210,10 +229,10 @@ export const SettingsView: React.FC = () => {
               <IconSound muted={!soundEnabled} size={20} />
               <div>
                 <div className="font-sans text-xs font-bold text-[#2B2118]">
-                  8-Bit Web Audio Procedural Sound Effects
+                  Island Music & 8-Bit Sound Effects
                 </div>
                 <div className="text-[11px] text-[#6B5A49]">
-                  Tactile clicks, level-up fanfares, and chest opening squeaks (off by default).
+                  Looped island ambience plus tactile clicks and game sounds (off by default).
                 </div>
               </div>
             </div>
@@ -232,7 +251,7 @@ export const SettingsView: React.FC = () => {
           {soundEnabled && (
             <div className="p-3 bg-white border border-[#D5C7AF] rounded-xs flex items-center justify-between gap-4">
               <span className="font-sans text-xs font-semibold text-[#2B2118]">
-                Master Synth Volume: {Math.round(soundVolume * 100)}%
+                Audio Volume: {Math.round(soundVolume * 100)}%
               </span>
               <input
                 type="range"
@@ -332,7 +351,7 @@ export const SettingsView: React.FC = () => {
       {/* Data Export / Import & Reset */}
       <PixelPanel variant="parchment" title="Data Persistence & Backup (JSON)">
         <p className="text-xs text-[#5A4D3F] mb-4">
-          All data is stored directly in your browser's localStorage. You can export a JSON backup at any time or restore a previous sanctuary.
+          All data is stored directly in your browser&apos;s localStorage. You can export a JSON backup at any time or restore a previous sanctuary.
         </p>
 
         <div className="flex flex-wrap items-center gap-3 mb-4">
@@ -364,7 +383,7 @@ export const SettingsView: React.FC = () => {
           <div className="flex gap-2">
             <textarea
               rows={2}
-              placeholder="Paste exported SkyDo JSON here..."
+              placeholder="Paste exported SkyDome JSON here..."
               value={importText}
               onChange={(e) => setImportText(e.target.value)}
               className="flex-1 pixel-input text-xs text-[#2B2118] bg-white"

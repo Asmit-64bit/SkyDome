@@ -26,7 +26,7 @@ const numberFont = Silkscreen({
 });
 
 export const metadata: Metadata = {
-  title: "SkyDo — Skyblock Productivity Island",
+  title: "SkyDome — Skyblock Productivity Island",
   description: "A Minecraft Skyblock-inspired productivity system featuring Quests, Minions, Focus Mining, Skills, and a growing Island.",
 };
 

@@ -44,7 +44,7 @@ export const Sidebar: React.FC = () => {
   ];
 
   return (
-    <aside className="hidden md:flex flex-col w-64 pixel-panel-stone border-r-4 border-[#4B4E52] shrink-0 min-h-screen text-[#F4EFE6] select-none p-4 sticky top-0 h-screen">
+    <aside className="hidden md:flex fixed inset-y-0 left-0 z-40 flex-col w-64 h-screen pixel-panel-stone border-r-4 border-[#4B4E52] text-[#F4EFE6] select-none p-4">
       {/* Brand Header */}
       <div className="flex items-center gap-2.5 pb-4 mb-3 border-b-2 border-[#4B4E52]">
         <div className="w-9 h-9 bg-[#5FA244] border-2 border-[#7EC461] rounded-xs flex items-center justify-center shadow-xs">
@@ -52,7 +52,7 @@ export const Sidebar: React.FC = () => {
         </div>
         <div>
           <div className="font-pixel text-lg font-bold tracking-wider text-[#F4EFE6] flex items-center gap-1.5">
-            <span>SkyDo</span>
+            <span>SkyDome</span>
             <span className="text-[10px] px-1 bg-[#E3B341] text-[#2B2118] rounded-xs font-bold">
               v1.0
             </span>
@@ -89,7 +89,7 @@ export const Sidebar: React.FC = () => {
       </button>
 
       {/* Main Nav Items List */}
-      <nav className="flex-1 space-y-1 overflow-y-auto pr-1">
+      <nav className="flex-1 min-h-0 space-y-1 overflow-y-auto pr-1">
         {navItems.map((item) => {
           const isActive = activeTab === item.id;
           return (
@@ -135,7 +135,6 @@ export const Sidebar: React.FC = () => {
           <span>Sound: {soundEnabled ? 'ON' : 'OFF'}</span>
         </button>
 
-        <span className="text-[10px] text-[#A8ABB0] font-sans">Skyblock Theme</span>
       </div>
     </aside>
   );

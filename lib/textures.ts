@@ -345,10 +345,6 @@ export function createLeavesTexture(light = false): THREE.CanvasTexture {
     }
   }
 
-  // Subtle border shading
-  ctx.fillStyle = darkTone;
-  ctx.strokeRect(0.5, 0.5, 15, 15);
-
   return createPixelTexture(canvas);
 }
 

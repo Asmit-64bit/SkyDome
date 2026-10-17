@@ -2,17 +2,15 @@
 
 import React, { useState } from 'react';
 import { useSkyDoStore, getTodayDateString } from '../../store/useSkyDoStore';
-import { Quest, QuestPriority } from '../../lib/types';
+import { Quest } from '../../lib/types';
 import { QuestItem } from '../quests/QuestItem';
 import { QuestModal } from '../quests/QuestModal';
-import { QuickAddInput } from '../quests/QuickAddInput';
 import { PixelTabs } from '../ui/PixelTabs';
 import { PixelButton } from '../ui/PixelButton';
 import {
   IconQuest,
   IconPlus,
   IconFilter,
-  IconSearch,
 } from '../icons/PixelIcons';
 
 export const QuestsView: React.FC = () => {
@@ -22,6 +20,7 @@ export const QuestsView: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'today' | 'upcoming' | 'all' | 'completed'>('today');
   const [priorityFilter, setPriorityFilter] = useState<string>('all');
   const [selectedTag, setSelectedTag] = useState<string>('all');
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [questToEdit, setQuestToEdit] = useState<Quest | null>(null);
@@ -36,7 +35,7 @@ export const QuestsView: React.FC = () => {
     // 1. Tab filter
     if (activeTab === 'today') {
       if (q.completed) return false;
-      if (q.dueDate && q.dueDate !== today) return false;
+      if (q.dueDate && q.dueDate > today) return false;
     } else if (activeTab === 'upcoming') {
       if (q.completed) return false;
       if (!q.dueDate || q.dueDate <= today) return false;
@@ -96,7 +95,7 @@ export const QuestsView: React.FC = () => {
     }
   };
 
-  const todayCount = quests.filter((q) => !q.completed && (!q.dueDate || q.dueDate === today)).length;
+  const todayCount = quests.filter((q) => !q.completed && (!q.dueDate || q.dueDate <= today)).length;
   const upcomingCount = quests.filter((q) => !q.completed && q.dueDate && q.dueDate > today).length;
   const allCount = quests.filter((q) => !q.completed).length;
   const completedCount = quests.filter((q) => q.completed).length;
@@ -126,18 +125,13 @@ export const QuestsView: React.FC = () => {
         </PixelButton>
       </div>
 
-      {/* Quick Add Bar */}
-      <div className="pixel-panel-parchment p-4 border-2 border-[#D5C7AF]">
-        <QuickAddInput />
-      </div>
-
       {/* Navigation Tabs (Today, Upcoming, All, Completed) */}
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
         <PixelTabs
           activeTab={activeTab}
-          onChange={(tab) => setActiveTab(tab as any)}
+          onChange={(tab) => setActiveTab(tab as 'today' | 'upcoming' | 'all' | 'completed')}
           tabs={[
-            { id: 'today', label: 'Today', count: todayCount },
+            { id: 'today', label: 'Today & overdue', count: todayCount },
             { id: 'upcoming', label: 'Upcoming', count: upcomingCount },
             { id: 'all', label: 'All Quests', count: allCount },
             { id: 'completed', label: 'Completed', count: completedCount },
@@ -165,10 +159,21 @@ export const QuestsView: React.FC = () => {
         </div>
       </div>
 
-      {/* Filter Row (Priority & Tags) */}
-      <div className="flex flex-wrap items-center gap-2 text-xs font-sans">
+      <div className="flex items-center gap-2">
+        <button type="button" aria-expanded={filtersOpen} aria-controls="quest-filters" onClick={() => setFiltersOpen(!filtersOpen)} className="pixel-btn pixel-btn-ghost text-xs h-9">
+          <IconFilter size={14} />
+          <span className="ml-1">Filters{priorityFilter !== 'all' || selectedTag !== 'all' ? ' · Active' : ''}</span>
+          <span className="ml-2" aria-hidden="true">{filtersOpen ? '−' : '+'}</span>
+        </button>
+        {(priorityFilter !== 'all' || selectedTag !== 'all') && (
+          <button type="button" onClick={() => { setPriorityFilter('all'); setSelectedTag('all'); }} className="text-xs font-semibold text-[#6B5A49] underline underline-offset-2">Clear filters</button>
+        )}
+      </div>
+
+      {/* Optional filters stay out of the way until needed */}
+      {filtersOpen && <div id="quest-filters" className="pixel-panel-parchment p-3 flex flex-wrap items-center gap-2 text-xs font-sans" aria-label="Quest filters">
         <span className="text-[#6B5A49] flex items-center gap-1 font-semibold">
-          <IconFilter size={12} /> Priority:
+          Priority:
         </span>
         {['all', 'common', 'uncommon', 'rare', 'epic', 'legendary'].map((p) => (
           <button
@@ -204,7 +209,7 @@ export const QuestsView: React.FC = () => {
             ))}
           </>
         )}
-      </div>
+      </div>}
 
       {/* Quests List */}
       <div className="space-y-3">
@@ -219,7 +224,7 @@ export const QuestsView: React.FC = () => {
             <p className="text-xs text-[#5A4D3F] mb-4 max-w-sm mx-auto">
               {activeTab === 'completed'
                 ? 'No completed quests in this view. Clear tasks to fill your archives.'
-                : 'Use the quick-add bar above or click below to plant a new adventure.'}
+                : 'Create a quest to begin your next adventure.'}
             </p>
             {activeTab !== 'completed' && (
               <PixelButton variant="primary" size="md" onClick={handleCreateNew}>

@@ -9,19 +9,17 @@ export const ToastContainer: React.FC = () => {
   const undoToast = useSkyDoStore((state) => state.undoToast);
   const setUndoToast = useSkyDoStore((state) => state.setUndoToast);
   const performUndo = useSkyDoStore((state) => state.performUndo);
-  const [progress, setProgress] = useState(100);
+  const [progress, setProgress] = useState<{ toastId: string | null; value: number }>({ toastId: null, value: 100 });
 
   useEffect(() => {
     if (!undoToast) return;
-    setProgress(100);
-
     const startTime = Date.now();
     const duration = 5000;
 
     const interval = setInterval(() => {
       const elapsed = Date.now() - startTime;
       const remaining = Math.max(0, 100 - (elapsed / duration) * 100);
-      setProgress(remaining);
+      setProgress({ toastId: undoToast.id, value: remaining });
 
       if (elapsed >= duration) {
         clearInterval(interval);
@@ -31,6 +29,8 @@ export const ToastContainer: React.FC = () => {
 
     return () => clearInterval(interval);
   }, [undoToast, setUndoToast]);
+
+  const progressPercent = undoToast && progress.toastId === undoToast.id ? progress.value : 100;
 
   return (
     <div className="fixed bottom-16 sm:bottom-6 right-4 sm:right-6 z-50 pointer-events-none">
@@ -49,10 +49,10 @@ export const ToastContainer: React.FC = () => {
               <PixelButton
                 variant="primary"
                 size="sm"
-                onClick={performUndo}
+                onClick={undoToast.type === 'notice' ? () => setUndoToast(null) : performUndo}
                 className="text-xs shrink-0"
               >
-                Undo
+                {undoToast.type === 'notice' ? 'Dismiss' : 'Undo'}
               </PixelButton>
             </div>
 
@@ -60,7 +60,7 @@ export const ToastContainer: React.FC = () => {
             <div className="w-full h-1 bg-[#4B4E52] overflow-hidden rounded-xs">
               <div
                 className="h-full bg-[#E3B341] transition-all duration-75"
-                style={{ width: `${progress}%` }}
+                style={{ width: `${progressPercent}%` }}
               />
             </div>
           </motion.div>

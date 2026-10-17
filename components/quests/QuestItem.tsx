@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import confetti from 'canvas-confetti';
 import { Quest, QuestPriority } from '../../lib/types';
-import { useSkyDoStore } from '../../store/useSkyDoStore';
+import { getTodayDateString, useSkyDoStore } from '../../store/useSkyDoStore';
 import { PixelBadge } from '../ui/PixelBadge';
 import { IconCheck, IconTrash, IconPickaxe } from '../icons/PixelIcons';
 
@@ -76,9 +76,11 @@ export const QuestItem: React.FC<QuestItemProps> = ({ quest, onEdit }) => {
 
   const completedSubtasks = quest.subtasks.filter((st) => st.completed).length;
   const totalSubtasks = quest.subtasks.length;
+  const isOverdue = !quest.completed && Boolean(quest.dueDate && quest.dueDate < getTodayDateString());
 
   return (
     <div
+      data-light-surface="true"
       className={`group relative pixel-panel-parchment p-3 sm:p-4 transition-all duration-150 ${
         priorityBorderClasses[quest.priority]
       } ${
@@ -108,15 +110,15 @@ export const QuestItem: React.FC<QuestItemProps> = ({ quest, onEdit }) => {
             <PixelBadge priority={quest.priority} />
 
             {quest.dueDate && (
-              <span className="text-[11px] font-sans font-semibold text-[#5A4D3F] px-1.5 py-0.2 bg-[#EAE0CA] border border-[#CDBE9F] rounded-xs">
-                📅 {quest.dueDate} {quest.dueTime ? `• ${quest.dueTime}` : ''}
+              <span className={`text-xs font-sans font-semibold px-1.5 py-0.5 border rounded-xs ${isOverdue ? 'text-[#8F2C25] bg-[#F9ECEB] border-[#D9A29E]' : 'text-[#5A4D3F] bg-[#EAE0CA] border-[#CDBE9F]'}`}>
+                {isOverdue ? 'Overdue · ' : 'Due · '}{quest.dueDate} {quest.dueTime ? `• ${quest.dueTime}` : ''}
               </span>
             )}
 
             {quest.tags.map((tag) => (
               <span
                 key={tag}
-                className="text-[10px] font-sans text-[#6B5A49] px-1.5 py-0.2 bg-[#FAF6ED] border border-[#D5C7AF] rounded-xs"
+                className="text-xs font-sans text-[#6B5A49] px-1.5 py-0.5 bg-[#FAF6ED] border border-[#D5C7AF] rounded-xs"
               >
                 #{tag}
               </span>
@@ -133,7 +135,7 @@ export const QuestItem: React.FC<QuestItemProps> = ({ quest, onEdit }) => {
           </h4>
 
           {quest.description && (
-            <p className="text-xs text-[#5A4D3F] mt-1 line-clamp-2">
+            <p className="text-sm text-[#5A4D3F] mt-1 line-clamp-2">
               {quest.description}
             </p>
           )}

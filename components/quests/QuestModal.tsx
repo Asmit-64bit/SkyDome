@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Quest, QuestPriority } from '../../lib/types';
 import { useSkyDoStore } from '../../store/useSkyDoStore';
 import { PixelModal } from '../ui/PixelModal';
@@ -14,7 +14,7 @@ export interface QuestModalProps {
   questToEdit?: Quest | null;
 }
 
-export const QuestModal: React.FC<QuestModalProps> = ({
+const QuestModalForm: React.FC<QuestModalProps> = ({
   isOpen,
   onClose,
   questToEdit,
@@ -22,35 +22,14 @@ export const QuestModal: React.FC<QuestModalProps> = ({
   const addQuest = useSkyDoStore((state) => state.addQuest);
   const editQuest = useSkyDoStore((state) => state.editQuest);
 
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
-  const [priority, setPriority] = useState<QuestPriority>('common');
-  const [dueDate, setDueDate] = useState('');
-  const [dueTime, setDueTime] = useState('');
-  const [tagsInput, setTagsInput] = useState('');
-  const [subtasks, setSubtasks] = useState<{ id: string; title: string; completed: boolean }[]>([]);
+  const [title, setTitle] = useState(questToEdit?.title ?? '');
+  const [description, setDescription] = useState(questToEdit?.description ?? '');
+  const [priority, setPriority] = useState<QuestPriority>(questToEdit?.priority ?? 'common');
+  const [dueDate, setDueDate] = useState(questToEdit?.dueDate ?? '');
+  const [dueTime, setDueTime] = useState(questToEdit?.dueTime ?? '');
+  const [tagsInput, setTagsInput] = useState(questToEdit?.tags.join(', ') ?? '');
+  const [subtasks, setSubtasks] = useState<{ id: string; title: string; completed: boolean }[]>(questToEdit?.subtasks ?? []);
   const [newSubtask, setNewSubtask] = useState('');
-
-  useEffect(() => {
-    if (questToEdit) {
-      setTitle(questToEdit.title);
-      setDescription(questToEdit.description || '');
-      setPriority(questToEdit.priority);
-      setDueDate(questToEdit.dueDate || '');
-      setDueTime(questToEdit.dueTime || '');
-      setTagsInput(questToEdit.tags.join(', '));
-      setSubtasks(questToEdit.subtasks || []);
-    } else {
-      setTitle('');
-      setDescription('');
-      setPriority('common');
-      setDueDate('');
-      setDueTime('');
-      setTagsInput('');
-      setSubtasks([]);
-      setNewSubtask('');
-    }
-  }, [questToEdit, isOpen]);
 
   const handleAddSubtask = (e: React.FormEvent) => {
     e.preventDefault();
@@ -274,4 +253,9 @@ export const QuestModal: React.FC<QuestModalProps> = ({
       </form>
     </PixelModal>
   );
+};
+
+export const QuestModal: React.FC<QuestModalProps> = (props) => {
+  if (!props.isOpen) return null;
+  return <QuestModalForm key={props.questToEdit?.id ?? 'new-quest'} {...props} />;
 };

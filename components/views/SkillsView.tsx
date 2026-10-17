@@ -13,10 +13,10 @@ import {
   Area,
 } from 'recharts';
 import { useSkyDoStore } from '../../store/useSkyDoStore';
+import { getTodayDateString } from '../../store/useSkyDoStore';
 import { SkillType } from '../../lib/types';
 import { PixelPanel } from '../ui/PixelPanel';
 import { PixelProgress } from '../ui/PixelProgress';
-import { PixelBadge } from '../ui/PixelBadge';
 import {
   IconSkills,
   IconHoe,
@@ -36,6 +36,7 @@ export const SkillsView: React.FC = () => {
   const quests = useSkyDoStore((state) => state.quests);
   const mining = useSkyDoStore((state) => state.mining);
   const dailyXp = useSkyDoStore((state) => state.dailyXp);
+  const dailyXpDate = useSkyDoStore((state) => state.dailyXpDate);
 
   // Skill icons map
   const skillIcons: Record<SkillType, React.ReactNode> = {
@@ -72,7 +73,7 @@ export const SkillsView: React.FC = () => {
       // Estimate / aggregate daily XP
       let dayXp = habitsDone * 25 + questXp;
       if (i === 0) {
-        dayXp = Math.max(dayXp, dailyXp);
+        dayXp = Math.max(dayXp, dailyXpDate === getTodayDateString() ? dailyXp : 0);
       } else if (dayXp === 0) {
         // Fallback baseline activity
         dayXp = Math.max(20, (habitsDone + 1) * 20);
@@ -90,7 +91,7 @@ export const SkillsView: React.FC = () => {
       });
     }
     return days;
-  }, [minions, quests, mining.totalFocusMinutesCompleted, dailyXp]);
+  }, [minions, quests, mining.totalFocusMinutesCompleted, dailyXp, dailyXpDate]);
 
   return (
     <div className="space-y-6">
@@ -195,14 +196,15 @@ export const SkillsView: React.FC = () => {
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={weeklyAnalyticsData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#D5C7AF" vertical={false} />
-                <XAxis dataKey="day" stroke="#6B5A49" fontSize={11} fontFamily="var(--font-pixel)" />
-                <YAxis stroke="#6B5A49" fontSize={11} fontFamily="var(--font-pixel)" />
+                <XAxis dataKey="day" stroke="#6B5A49" fontSize={11} fontFamily="var(--font-sans)" fontWeight={600} />
+                <YAxis stroke="#6B5A49" fontSize={11} fontFamily="var(--font-sans)" fontWeight={600} />
                 <Tooltip
                   contentStyle={{
                     backgroundColor: '#FAF6ED',
                     border: '2px solid #8A8D91',
                     borderRadius: '2px',
-                    fontFamily: 'var(--font-pixel)',
+                    fontFamily: 'var(--font-sans)',
+                    fontWeight: 600,
                     fontSize: '12px',
                     color: '#2B2118',
                   }}
@@ -222,14 +224,15 @@ export const SkillsView: React.FC = () => {
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={weeklyAnalyticsData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#D5C7AF" vertical={false} />
-                <XAxis dataKey="day" stroke="#6B5A49" fontSize={11} fontFamily="var(--font-pixel)" />
-                <YAxis stroke="#6B5A49" fontSize={11} fontFamily="var(--font-pixel)" />
+                <XAxis dataKey="day" stroke="#6B5A49" fontSize={11} fontFamily="var(--font-sans)" fontWeight={600} />
+                <YAxis stroke="#6B5A49" fontSize={11} fontFamily="var(--font-sans)" fontWeight={600} />
                 <Tooltip
                   contentStyle={{
                     backgroundColor: '#FAF6ED',
                     border: '2px solid #8A8D91',
                     borderRadius: '2px',
-                    fontFamily: 'var(--font-pixel)',
+                    fontFamily: 'var(--font-sans)',
+                    fontWeight: 600,
                     fontSize: '12px',
                     color: '#2B2118',
                   }}

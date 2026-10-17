@@ -12,6 +12,8 @@ export interface Quest {
   description?: string;
   priority: QuestPriority;
   completed: boolean;
+  /** Prevents duplicate XP and coin payouts after unchecking or undoing completion. */
+  rewardClaimed?: boolean;
   completedAt?: string;
   dueDate?: string; // YYYY-MM-DD
   dueTime?: string; // HH:mm
@@ -97,17 +99,22 @@ export interface LibraryNote {
   updatedAt: string;
 }
 
-export type IslandTheme = 'day' | 'sunset' | 'cloudy' | 'night';
+export type IslandTheme = 'day' | 'sunset' | 'cloudy' | 'night' | 'galaxy';
 export type NumberFontStyle = 'tabular' | 'clean' | 'silkscreen' | 'pixel';
 
 export interface ShopItem {
   id: string;
   name: string;
-  category: 'cosmetic' | 'theme' | 'companion';
+  category: 'pet' | 'house' | 'decoration' | 'tree' | 'farm' | 'water' | 'theme';
   price: number;
+  oreCost?: Partial<Record<MiningBlockType, number>>;
+  farmCrop?: 'wheat' | 'carrot' | 'potato' | 'beetroot' | 'melon' | 'pumpkin' | 'sugarcane';
+  farmIncome?: number;
   description: string;
-  unlocked: boolean;
+  ability?: string;
+  owned: boolean;
   equipped: boolean;
+  requiredLevel?: number;
   icon: string;
 }
 
@@ -144,9 +151,9 @@ export interface IslandSettings {
 
 export interface UndoItem {
   id: string;
-  type: 'quest_delete' | 'quest_complete' | 'note_delete' | 'minion_delete';
+  type: 'quest_delete' | 'quest_complete' | 'note_delete' | 'minion_delete' | 'notice';
   title: string;
-  data: any;
+  data: { id?: string; quest?: Quest; note?: LibraryNote; minion?: Minion };
   timestamp: number;
 }
 

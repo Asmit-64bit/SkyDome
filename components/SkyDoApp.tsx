@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useSyncExternalStore } from 'react';
 import { useSkyDoStore } from '../store/useSkyDoStore';
 import { Sidebar } from './layout/Sidebar';
 import { BottomTabBar } from './layout/BottomTabBar';
@@ -26,11 +26,15 @@ import {
   IconCampfire,
   IconCoin,
   IconSearch,
-  IconPickaxe,
 } from './icons/PixelIcons';
 
 export const SkyDoApp: React.FC = () => {
-  const [mounted, setMounted] = useState(false);
+  const mounted = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false
+  );
+  const musicRef = React.useRef<HTMLAudioElement>(null);
   const activeTab = useSkyDoStore((state) => state.activeTab);
   const setActiveTab = useSkyDoStore((state) => state.setActiveTab);
   const theme = useSkyDoStore((state) => state.theme);
@@ -39,22 +43,53 @@ export const SkyDoApp: React.FC = () => {
   const islandLevel = useSkyDoStore((state) => state.islandLevel);
   const streak = useSkyDoStore((state) => state.streak);
   const coins = useSkyDoStore((state) => state.coins);
+  const soundEnabled = useSkyDoStore((state) => state.soundEnabled);
+  const soundVolume = useSkyDoStore((state) => state.soundVolume);
   const setCommandPaletteOpen = useSkyDoStore((state) => state.setCommandPaletteOpen);
   const setNumberFont = useSkyDoStore((state) => state.setNumberFont);
 
   // Global Mining Timer State
   const mining = useSkyDoStore((state) => state.mining);
   const tickMiningTimer = useSkyDoStore((state) => state.tickMiningTimer);
-  const pauseMiningTimer = useSkyDoStore((state) => state.pauseMiningTimer);
-  const resumeMiningTimer = useSkyDoStore((state) => state.resumeMiningTimer);
-
   useEffect(() => {
-    setMounted(true);
     // Upgrade legacy 'silkscreen' default to 'tabular' so numbers are immediately legible
     if (numberFont === 'silkscreen') {
       setNumberFont('tabular');
     }
-  }, []);
+  }, [numberFont, setNumberFont]);
+
+  // Play the bundled island track alongside procedural effects when sound is enabled.
+  useEffect(() => {
+    if (!mounted) return;
+    const audio = musicRef.current;
+    if (!audio) return;
+    audio.volume = Math.min(0.08, soundVolume * 0.08);
+
+    if (!soundEnabled) {
+      audio.pause();
+      return;
+    }
+
+    let active = true;
+    const tryPlay = () => {
+      if (!active) return;
+      void audio.play().then(() => {
+        window.removeEventListener('pointerdown', tryPlay);
+        window.removeEventListener('keydown', tryPlay);
+      }).catch(() => {
+        // Browsers may block autoplay until the user interacts with the page.
+      });
+    };
+
+    tryPlay();
+    window.addEventListener('pointerdown', tryPlay);
+    window.addEventListener('keydown', tryPlay);
+    return () => {
+      active = false;
+      window.removeEventListener('pointerdown', tryPlay);
+      window.removeEventListener('keydown', tryPlay);
+    };
+  }, [mounted, soundEnabled, soundVolume]);
 
   // Global Background Focus Timer Loop - runs continuously across ALL views
   useEffect(() => {
@@ -123,28 +158,29 @@ export const SkyDoApp: React.FC = () => {
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-[#8EC9F0] to-[#DDF1FB] font-pixel text-xl text-[#2B2118]">
         <div className="p-6 pixel-panel-parchment text-center animate-pulse">
           <IconIsland size={40} className="mx-auto mb-2" />
-          <span>Building SkyDo Island...</span>
+          <span>Building SkyDome Island...</span>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen flex flex-col md:flex-row bg-gradient-to-b from-[var(--color-sky-top)] to-[var(--color-sky-bottom)] transition-colors duration-500 font-sans text-[#2B2118] w-full max-w-full overflow-x-hidden">
+    <div className={`min-h-screen flex flex-col md:flex-row ${theme === 'galaxy' ? 'galaxy-sky-background' : 'bg-gradient-to-b from-[var(--color-sky-top)] to-[var(--color-sky-bottom)]'} ${theme === 'night' || theme === 'galaxy' ? 'dark-theme-text' : ''} transition-colors duration-500 font-sans text-[#2B2118] w-full max-w-full overflow-x-hidden`}>
+      <audio ref={musicRef} src="/rizzlas-rizzlas-c418-224649.mp3" loop preload="none" aria-hidden="true" />
       {/* Desktop Left Sidebar */}
       <Sidebar />
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col min-w-0 pb-28 sm:pb-32 md:pb-8 w-full max-w-full overflow-x-hidden">
+      <div className="flex-1 flex flex-col min-w-0 pt-16 pb-28 sm:pb-32 md:pt-0 md:pb-8 md:ml-64 w-full max-w-full overflow-x-hidden">
         {/* Mobile Header Bar */}
-        <header className="md:hidden pixel-panel-stone px-3 sm:px-4 py-2.5 flex items-center justify-between sticky top-0 z-30 shadow-md w-full max-w-full">
+        <header className="md:hidden fixed inset-x-0 top-0 z-50 pixel-panel-stone px-3 sm:px-4 py-2.5 min-h-16 flex items-center justify-between shadow-md w-full max-w-full">
           <div className="flex items-center gap-2 min-w-0">
             <div className="w-7 h-7 bg-[#5FA244] border border-[#7EC461] rounded-xs flex items-center justify-center shrink-0">
               <IconIsland size={18} />
             </div>
             <div className="min-w-0">
-              <span className="font-pixel text-sm font-bold text-[#F4EFE6] block leading-tight">
-                SkyDo
+              <span className="font-pixel text-base font-bold text-[#F4EFE6] block leading-tight">
+                SkyDome
               </span>
               <span className="text-[10px] font-sans font-medium text-[#C7C9CC] block leading-none truncate max-w-[130px] sm:max-w-[200px]">
                 Lvl <span className="font-number font-bold">{islandLevel}</span> • {islandName}
@@ -176,7 +212,7 @@ export const SkyDoApp: React.FC = () => {
 
         {/* Background Focus Timer Running Indicator */}
         {mining.state === 'running' && activeTab !== 'mining' && (
-          <div className="bg-[#FAF6ED] border-b-2 border-[#C8B896] px-3 sm:px-6 py-2 shadow-xs flex items-center justify-between text-xs font-sans animate-fade-in sticky top-11 md:top-0 z-20">
+          <div className="bg-[#FAF6ED] border-b-2 border-[#C8B896] px-3 sm:px-6 py-2 shadow-xs flex items-center justify-between text-xs font-sans animate-fade-in sticky top-16 md:top-0 z-30">
             <div className="flex items-center gap-2 min-w-0">
               <span className="text-sm">⚒️</span>
               <span className="text-[#2B2118] font-bold truncate">
