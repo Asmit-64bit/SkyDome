@@ -212,7 +212,7 @@ export const SkyDoApp: React.FC = () => {
 
         {/* Background Focus Timer Running Indicator */}
         {mining.state === 'running' && activeTab !== 'mining' && (
-          <div className="bg-[#FAF6ED] border-b-2 border-[#C8B896] px-3 sm:px-6 py-2 shadow-xs flex items-center justify-between text-xs font-sans animate-fade-in sticky top-16 md:top-0 z-30">
+          <div className="bg-[#FAF6ED] border-b-2 border-[#C8B896] px-3 sm:px-6 py-2 shadow-xs flex items-center justify-between text-xs font-sans animate-fade-in">
             <div className="flex items-center gap-2 min-w-0">
               <span className="text-sm">⚒️</span>
               <span className="text-[#2B2118] font-bold truncate">
